@@ -186,8 +186,11 @@ class MLabBackend(SpeedTestBackend):
         except BackendError:
             return LatencyResult(failed=True)
 
+        self._cancelled = False
         times: list[float] = []
         for i in range(samples):
+            if self._cancelled:
+                break
             try:
                 start = time.perf_counter()
                 ws = websocket.create_connection(
@@ -232,6 +235,7 @@ class MLabBackend(SpeedTestBackend):
     def test_download(self, callback: ProgressCallback = None) -> SpeedResult:
         if not _HAS_WS:
             raise BackendError("websocket-client package required for M-Lab")
+        self._cancelled = False
         url = self._ws_url(DOWNLOAD_KEY)
         ws = self._open_ws(url)
         self._current_ws = ws
@@ -276,6 +280,7 @@ class MLabBackend(SpeedTestBackend):
     def test_upload(self, callback: ProgressCallback = None) -> SpeedResult:
         if not _HAS_WS:
             raise BackendError("websocket-client package required for M-Lab")
+        self._cancelled = False
         url = self._ws_url(UPLOAD_KEY)
         ws = self._open_ws(url)
         self._current_ws = ws

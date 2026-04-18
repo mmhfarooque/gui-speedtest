@@ -10,6 +10,7 @@ Provides:
 from __future__ import annotations
 
 import logging
+import socket
 import ssl
 import statistics
 import time
@@ -149,9 +150,14 @@ def measure_latency(
 
     If `backend` is provided, the live response is published to
     backend._current_resp during each read() so backend.cancel() can close
-    it from another thread."""
+    it from another thread. The loop also honours backend._cancelled at
+    each iteration — cancel() sets it, so subsequent samples are skipped."""
+    if backend is not None:
+        backend._cancelled = False
     times: list[float] = []
     for i in range(samples):
+        if backend is not None and backend._cancelled:
+            break
         try:
             req = req_factory()
             start = time.perf_counter()
@@ -200,11 +206,16 @@ def run_chunks(
 
     If `backend` is provided, the live response is published to
     backend._current_resp during each read() so backend.cancel() can close
-    it from another thread.
+    it from another thread. The loop also honours backend._cancelled —
+    cancel() sets it, so the next chunk is not started.
     """
+    if backend is not None:
+        backend._cancelled = False
     chunks_list = list(chunks)
     results: list[float] = []
     for i, chunk in enumerate(chunks_list, 1):
+        if backend is not None and backend._cancelled:
+            break
         try:
             req = chunk.request_factory()
             start = time.perf_counter()
@@ -249,11 +260,15 @@ class SpeedTestBackend(ABC):
     name: str = "base"
     display_name: str = "Base"
 
-    # Tracks the currently-active HTTP response so cancel() can close it
-    # from another thread. run_chunks and measure_latency set this before
-    # read() and clear it after. Class-level default keeps __init__
-    # optional in subclasses.
+    # Tracks the currently-active HTTP response so cancel() can shut down
+    # its socket from another thread. run_chunks and measure_latency set
+    # this before read() and clear it after. Class-level default keeps
+    # __init__ optional in subclasses.
     _current_resp = None
+    # Cancellation flag consulted by run_chunks and measure_latency at
+    # each loop iteration — prevents starting a new chunk after cancel().
+    # Must be reset by the caller (or a new run) before reuse.
+    _cancelled = False
 
     @classmethod
     def available(cls) -> bool:
@@ -279,16 +294,33 @@ class SpeedTestBackend(ABC):
         """Measure upload throughput. Raises BackendError on total failure."""
 
     def cancel(self) -> None:
-        """Abort any in-flight HTTP test by closing the current response.
-        A blocking .read() in the worker thread raises immediately and the
-        thread exits at its next phase-boundary check on self.cancelled.
+        """Abort any in-flight HTTP test.
+
+        Shuts down the socket of the current response (thread-safe and
+        non-blocking — unlike resp.close(), which may deadlock waiting on
+        urllib internal locks held by the worker thread's blocking read).
+        The worker's read() then returns immediately with a connection
+        error; run_chunks / measure_latency catch it, see self._cancelled,
+        and break out of their loop without starting a new chunk.
 
         Subclasses with additional cancellation semantics (Ookla's
         subprocess, M-Lab's WebSocket) override this — typically they call
         super().cancel() first to cover any HTTP enrichment paths."""
+        self._cancelled = True
         resp = self._current_resp
-        if resp is not None:
+        if resp is None:
+            return
+        # Walk urllib.response.addinfourl -> HTTPResponse -> BufferedReader
+        # -> raw SocketIO -> socket. The attribute path is a CPython impl
+        # detail but has been stable since 3.0. Fall back silently if it
+        # shifts in a future release.
+        sock = None
+        try:
+            sock = resp.fp.raw._sock  # type: ignore[union-attr]
+        except AttributeError:
+            pass
+        if sock is not None:
             try:
-                resp.close()
+                sock.shutdown(socket.SHUT_RDWR)
             except OSError as e:
-                logger.debug("cancel: closing response failed: %s", e)
+                logger.debug("cancel: socket.shutdown failed: %s", e)

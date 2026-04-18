@@ -44,6 +44,11 @@
   </keywords>
   <content_rating type="oars-1.1"/>
   <releases>
+    <release version="1.1.3" date="2026-04-18">
+      <description>
+        <p>Fixes the "Is Not Responding" freeze when Cancel was clicked on a slow OVH download — now uses socket.shutdown() instead of resp.close() (thread-safe, non-blocking) and checks a cancellation flag between chunks.</p>
+      </description>
+    </release>
     <release version="1.1.2" date="2026-04-18">
       <description>
         <p>Larger default window so the full control set fits on first open without dragging. Minimum size pinned to keep the layout sane if resized.</p>
