@@ -44,6 +44,11 @@
   </keywords>
   <content_rating type="oars-1.1"/>
   <releases>
+    <release version="1.1.2" date="2026-04-18">
+      <description>
+        <p>Larger default window so the full control set fits on first open without dragging. Minimum size pinned to keep the layout sane if resized.</p>
+      </description>
+    </release>
     <release version="1.1.1" date="2026-04-18">
       <description>
         <p>Cancel button now aborts in-flight HTTP downloads and M-Lab WebSocket streams immediately instead of waiting for the current chunk to finish.</p>

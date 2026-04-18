@@ -1,3 +1,12 @@
+gui-speedtest (1.1.2-1) unstable; urgency=medium
+
+  * GUI: first-open window size increased from 520x720 -> 580x860 so every
+    control (speed cards, latency row, connection group, progress, status,
+    Start button) is visible without dragging to resize. Minimum window
+    size pinned at 480x640 to stop accidental shrink-to-broken.
+
+ -- Mahmud Farooque <farooque7@gmail.com>  Sat, 18 Apr 2026 19:00:00 +0600
+
 gui-speedtest (1.1.1-1) unstable; urgency=medium
 
   * GUI: Cancel now really cancels. v1.1.0's cancel only set a flag and

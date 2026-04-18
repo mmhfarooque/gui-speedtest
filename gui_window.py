@@ -23,7 +23,14 @@ def run_gui(
     class SpeedTestWindow(Adw.ApplicationWindow):
         def __init__(self, app: Adw.Application, initial_backend: str) -> None:
             super().__init__(application=app, title=app_name)
-            self.set_default_size(520, 720)
+            # Default size picked to show every control on first open without
+            # scrolling: speed cards + latency row + 5 connection rows +
+            # progress + status + button + margins ~= 840 px tall.
+            self.set_default_size(580, 860)
+            # Floor — stops the user accidentally shrinking the window to a
+            # state where the cards overlap or the Start button is hidden.
+            # ScrolledWindow handles anything taller than this gracefully.
+            self.set_size_request(480, 640)
             self.running = False
             self.backends = available_backends()
             if initial_backend not in self.backends:
