@@ -1,3 +1,22 @@
+gui-speedtest (1.2.0-1) unstable; urgency=medium
+
+  * Cloudflare: upload chunk sizes bumped from 500K-5M to 1M-25M so TCP
+    has time to ramp up and saturate the link before each sample ends.
+    The old range measured warmup slope rather than steady-state
+    throughput and reported ~30% low on fast connections.
+  * OVH: now probes both public mirrors (Gravelines FR + Beauharnois CA)
+    on first use and picks the lower-latency one. EU users hit Gravelines,
+    North American users hit Beauharnois. No Asian mirror exists, so
+    AS/OC users still see OVH's geography-bound throughput.
+  * M-Lab upload: authoritative byte count now comes from the server's
+    AppInfo measurement frames (ndt7 TEXT messages sent during the test)
+    when available. Client-side counter remains as fallback. The client
+    counter measures bytes handed to the socket send buffer, which on
+    fast links overshoots the real wire throughput by a few seconds of
+    buffer.
+
+ -- Mahmud Farooque <farooque7@gmail.com>  Sat, 18 Apr 2026 20:15:00 +0600
+
 gui-speedtest (1.1.3-1) unstable; urgency=medium
 
   * GUI: Cancel now actually cancels AND doesn't freeze the window.

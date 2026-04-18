@@ -48,11 +48,15 @@ DOWN_SIZES = [
     (10_000_000, "10 MB"),
     (25_000_000, "25 MB"),
 ]
+# Upload sizes symmetric with DOWN_SIZES so TCP has time to ramp up and
+# saturate before the sample ends. With the old 500K-5M range, the top
+# samples often measured warmup slope rather than steady-state throughput
+# and reported ~30% low on fast links.
 UP_SIZES = [
-    (500_000, "500 KB"),
     (1_000_000, "1 MB"),
-    (2_000_000, "2 MB"),
     (5_000_000, "5 MB"),
+    (10_000_000, "10 MB"),
+    (25_000_000, "25 MB"),
 ]
 
 

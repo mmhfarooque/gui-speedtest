@@ -278,6 +278,15 @@ class MLabBackend(SpeedTestBackend):
         return SpeedResult(speed_mbps=speed_mbps, samples=[speed_mbps])
 
     def test_upload(self, callback: ProgressCallback = None) -> SpeedResult:
+        """Upload test with authoritative server-side byte count.
+
+        The ndt7 protocol has the server periodically send TEXT (JSON)
+        frames containing its own receive counters — AppInfo.NumBytes
+        and AppInfo.ElapsedTime (microseconds). We drain those at the
+        end of the test and prefer the server count over our client-side
+        counter (which measures bytes handed to the socket buffer, not
+        bytes actually ACK'd on the wire — can drift by seconds of
+        buffer on fast links)."""
         if not _HAS_WS:
             raise BackendError("websocket-client package required for M-Lab")
         self._cancelled = False
@@ -285,6 +294,8 @@ class MLabBackend(SpeedTestBackend):
         ws = self._open_ws(url)
         self._current_ws = ws
         total_bytes = 0
+        server_bytes = 0
+        server_elapsed_us = 0
         elapsed = 0.0
         payload = os.urandom(CHUNK_SIZE)
         try:
@@ -307,6 +318,35 @@ class MLabBackend(SpeedTestBackend):
                             "total": TEST_DURATION_S,
                         },
                     )
+
+            # Drain any server TEXT measurement frames queued during the
+            # test. Short timeout because we've stopped sending and the
+            # server may stop emitting once it sees the end of stream.
+            try:
+                ws.sock.settimeout(1.0)
+            except (AttributeError, OSError):
+                pass
+            for _ in range(20):
+                try:
+                    opcode, frame = ws.recv_data(control_frame=False)
+                except (websocket.WebSocketException, OSError):
+                    break
+                if opcode == websocket.ABNF.OPCODE_TEXT:
+                    try:
+                        msg = json.loads(
+                            frame.decode("utf-8", errors="replace")
+                            if isinstance(frame, (bytes, bytearray))
+                            else frame
+                        )
+                    except json.JSONDecodeError:
+                        continue
+                    app_info = (msg.get("AppInfo") or {}) if isinstance(msg, dict) else {}
+                    nb = app_info.get("NumBytes")
+                    et = app_info.get("ElapsedTime")
+                    if isinstance(nb, int) and nb > server_bytes:
+                        server_bytes = nb
+                    if isinstance(et, int) and et > server_elapsed_us:
+                        server_elapsed_us = et
         finally:
             self._current_ws = None
             try:
@@ -314,6 +354,11 @@ class MLabBackend(SpeedTestBackend):
             except (websocket.WebSocketException, OSError) as e:
                 logger.debug("M-Lab upload ws close failed: %s", e)
 
+        # Prefer server-reported count when we got one — it reflects what
+        # actually arrived on the wire, not what we handed to our socket.
+        if server_bytes > 0 and server_elapsed_us > 0:
+            speed_mbps = (server_bytes * 8) / (server_elapsed_us)  # NumBytes*8/µs = Mbit/s
+            return SpeedResult(speed_mbps=speed_mbps, samples=[speed_mbps])
         if elapsed <= 0 or total_bytes == 0:
             raise BackendError("M-Lab upload sent no data")
         speed_mbps = (total_bytes * 8) / (elapsed * 1_000_000)
