@@ -146,7 +146,7 @@ class LibreSpeedBackend(SpeedTestBackend):
         def factory() -> urllib.request.Request:
             return urllib.request.Request(url, headers={"User-Agent": BROWSER_UA})
 
-        return measure_latency(factory, samples, callback)
+        return measure_latency(factory, samples, callback, backend=self)
 
     def test_download(self, callback: ProgressCallback = None) -> SpeedResult:
         def make(mb: int) -> urllib.request.Request:
@@ -159,7 +159,7 @@ class LibreSpeedBackend(SpeedTestBackend):
             Chunk(request_factory=lambda m=mb: make(m), label=f"{mb} MB")
             for mb in DOWN_CHUNKS_MB
         ]
-        return run_chunks(chunks, "download_chunk", callback)
+        return run_chunks(chunks, "download_chunk", callback, backend=self)
 
     def test_upload(self, callback: ProgressCallback = None) -> SpeedResult:
         def make(size: int) -> urllib.request.Request:
@@ -177,4 +177,4 @@ class LibreSpeedBackend(SpeedTestBackend):
             Chunk(request_factory=lambda s=s: make(s), label=label, size_bytes=s)
             for s, label in UP_SIZES
         ]
-        return run_chunks(chunks, "upload_chunk", callback)
+        return run_chunks(chunks, "upload_chunk", callback, backend=self)

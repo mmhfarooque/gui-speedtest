@@ -143,15 +143,26 @@ def measure_latency(
     samples: int,
     callback: ProgressCallback = None,
     timeout: int = 5,
+    backend: "SpeedTestBackend | None" = None,
 ) -> LatencyResult:
-    """Round-trip time measurement — one request per sample, read to EOF."""
+    """Round-trip time measurement — one request per sample, read to EOF.
+
+    If `backend` is provided, the live response is published to
+    backend._current_resp during each read() so backend.cancel() can close
+    it from another thread."""
     times: list[float] = []
     for i in range(samples):
         try:
             req = req_factory()
             start = time.perf_counter()
             with urllib.request.urlopen(req, timeout=timeout, context=ssl_context()) as resp:
-                resp.read()
+                if backend is not None:
+                    backend._current_resp = resp
+                try:
+                    resp.read()
+                finally:
+                    if backend is not None:
+                        backend._current_resp = None
             elapsed = (time.perf_counter() - start) * 1000
             times.append(elapsed)
             if callback:
@@ -180,11 +191,16 @@ def run_chunks(
     event_name: str,
     callback: ProgressCallback = None,
     timeout: int = 30,
+    backend: "SpeedTestBackend | None" = None,
 ) -> SpeedResult:
     """Run each chunk, measure throughput, aggregate via top_half.
 
     Raises BackendError if no chunk succeeded — the standardised error
     contract for download/upload test methods.
+
+    If `backend` is provided, the live response is published to
+    backend._current_resp during each read() so backend.cancel() can close
+    it from another thread.
     """
     chunks_list = list(chunks)
     results: list[float] = []
@@ -193,7 +209,13 @@ def run_chunks(
             req = chunk.request_factory()
             start = time.perf_counter()
             with urllib.request.urlopen(req, timeout=timeout, context=ssl_context()) as resp:
-                body = resp.read()
+                if backend is not None:
+                    backend._current_resp = resp
+                try:
+                    body = resp.read()
+                finally:
+                    if backend is not None:
+                        backend._current_resp = None
             elapsed = time.perf_counter() - start
             if elapsed <= 0:
                 continue
@@ -227,6 +249,12 @@ class SpeedTestBackend(ABC):
     name: str = "base"
     display_name: str = "Base"
 
+    # Tracks the currently-active HTTP response so cancel() can close it
+    # from another thread. run_chunks and measure_latency set this before
+    # read() and clear it after. Class-level default keeps __init__
+    # optional in subclasses.
+    _current_resp = None
+
     @classmethod
     def available(cls) -> bool:
         """Return True if this backend can run on this system."""
@@ -251,6 +279,16 @@ class SpeedTestBackend(ABC):
         """Measure upload throughput. Raises BackendError on total failure."""
 
     def cancel(self) -> None:
-        """Abort any in-flight test. Default is a no-op; backends with
-        cancellable subprocesses or long-lived sockets override this."""
-        return None
+        """Abort any in-flight HTTP test by closing the current response.
+        A blocking .read() in the worker thread raises immediately and the
+        thread exits at its next phase-boundary check on self.cancelled.
+
+        Subclasses with additional cancellation semantics (Ookla's
+        subprocess, M-Lab's WebSocket) override this — typically they call
+        super().cancel() first to cover any HTTP enrichment paths."""
+        resp = self._current_resp
+        if resp is not None:
+            try:
+                resp.close()
+            except OSError as e:
+                logger.debug("cancel: closing response failed: %s", e)

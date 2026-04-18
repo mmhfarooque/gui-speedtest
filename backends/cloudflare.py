@@ -148,7 +148,7 @@ class CloudflareBackend(SpeedTestBackend):
                 DOWN_URL.format(0), headers={"User-Agent": BROWSER_UA}
             )
 
-        return measure_latency(factory, samples, callback)
+        return measure_latency(factory, samples, callback, backend=self)
 
     def test_download(self, callback: ProgressCallback = None) -> SpeedResult:
         def make(size: int) -> urllib.request.Request:
@@ -160,7 +160,7 @@ class CloudflareBackend(SpeedTestBackend):
             Chunk(request_factory=lambda s=s: make(s), label=label)
             for s, label in DOWN_SIZES
         ]
-        return run_chunks(chunks, "download_chunk", callback)
+        return run_chunks(chunks, "download_chunk", callback, backend=self)
 
     def test_upload(self, callback: ProgressCallback = None) -> SpeedResult:
         def make(size: int) -> urllib.request.Request:
@@ -178,4 +178,4 @@ class CloudflareBackend(SpeedTestBackend):
             Chunk(request_factory=lambda s=s: make(s), label=label, size_bytes=s)
             for s, label in UP_SIZES
         ]
-        return run_chunks(chunks, "upload_chunk", callback)
+        return run_chunks(chunks, "upload_chunk", callback, backend=self)

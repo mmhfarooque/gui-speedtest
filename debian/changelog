@@ -1,3 +1,25 @@
+gui-speedtest (1.1.1-1) unstable; urgency=medium
+
+  * GUI: Cancel now really cancels. v1.1.0's cancel only set a flag and
+    waited for the current chunk to complete/time out — for OVH on a slow
+    link that meant a 30+ second wait after clicking Cancel. v1.1.1
+    tracks the in-flight urllib response (and M-Lab WebSocket) on the
+    backend instance; cancel() closes it so the blocking read()/recv()
+    raises immediately and the worker thread exits at the next
+    phase-boundary check.
+
+  * Backend base class: new _current_resp field + non-no-op default
+    cancel() implementation. run_chunks and measure_latency accept an
+    optional `backend=self` arg and publish the active response to it.
+
+  * M-Lab: tracks _current_ws alongside _current_resp — cancel() closes
+    both so download/upload tests abort mid-stream, not after the full
+    10-second window.
+
+  * AppStream metainfo: add release entry for 1.1.1.
+
+ -- Mahmud Farooque <farooque7@gmail.com>  Sat, 18 Apr 2026 18:45:00 +0600
+
 gui-speedtest (1.1.0-1) unstable; urgency=medium
 
   * Ookla backend: availability check now verifies the `speedtest` binary

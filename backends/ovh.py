@@ -83,7 +83,7 @@ class OvhBackend(SpeedTestBackend):
                 url, headers={"User-Agent": BROWSER_UA}, method="HEAD"
             )
 
-        return measure_latency(factory, samples, callback)
+        return measure_latency(factory, samples, callback, backend=self)
 
     def test_download(self, callback: ProgressCallback = None) -> SpeedResult:
         def make(fragment: str) -> urllib.request.Request:
@@ -95,7 +95,7 @@ class OvhBackend(SpeedTestBackend):
             Chunk(request_factory=lambda f=f: make(f), label=label)
             for f, label in DOWN_FILES
         ]
-        return run_chunks(chunks, "download_chunk", callback, timeout=60)
+        return run_chunks(chunks, "download_chunk", callback, timeout=60, backend=self)
 
     def test_upload(self, callback: ProgressCallback = None) -> SpeedResult:
         raise BackendError("OVH does not offer an upload endpoint")

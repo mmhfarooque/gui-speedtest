@@ -44,6 +44,11 @@
   </keywords>
   <content_rating type="oars-1.1"/>
   <releases>
+    <release version="1.1.1" date="2026-04-18">
+      <description>
+        <p>Cancel button now aborts in-flight HTTP downloads and M-Lab WebSocket streams immediately instead of waiting for the current chunk to finish.</p>
+      </description>
+    </release>
     <release version="1.1.0" date="2026-04-18">
       <description>
         <p>Ookla binary identity check, real M-Lab latency measurement, M-Lab client IP/ISP enrichment, in-test Cancel button, AppStream metainfo, AppImage support.</p>

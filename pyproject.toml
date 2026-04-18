@@ -8,7 +8,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "gui-speedtest"
-version = "1.1.0"
+version = "1.1.1"
 description = "GUI + CLI internet speed test for Linux with multiple backends (Cloudflare, Ookla, M-Lab NDT, LibreSpeed, OVH)"
 readme = "README.md"
 requires-python = ">=3.10"

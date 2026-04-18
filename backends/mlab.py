@@ -75,6 +75,21 @@ class MLabBackend(SpeedTestBackend):
 
     def __init__(self) -> None:
         self._locate: dict | None = None
+        # Tracks the active WebSocket so cancel() can close it mid-stream.
+        # Complements base class _current_resp for HTTP enrichment calls.
+        self._current_ws = None
+
+    def cancel(self) -> None:
+        """Close the base class HTTP response AND the active WebSocket.
+        Both recv_data() and send_binary() raise WebSocketException when
+        the socket closes, letting the test loop drop out immediately."""
+        super().cancel()
+        ws = self._current_ws
+        if ws is not None and _HAS_WS:
+            try:
+                ws.close()
+            except (websocket.WebSocketException, OSError) as e:
+                logger.debug("cancel: closing M-Lab ws failed: %s", e)
 
     @classmethod
     def available(cls) -> bool:
@@ -219,6 +234,7 @@ class MLabBackend(SpeedTestBackend):
             raise BackendError("websocket-client package required for M-Lab")
         url = self._ws_url(DOWNLOAD_KEY)
         ws = self._open_ws(url)
+        self._current_ws = ws
         total_bytes = 0
         elapsed = 0.0
         try:
@@ -246,6 +262,7 @@ class MLabBackend(SpeedTestBackend):
                         },
                     )
         finally:
+            self._current_ws = None
             try:
                 ws.close()
             except (websocket.WebSocketException, OSError) as e:
@@ -261,6 +278,7 @@ class MLabBackend(SpeedTestBackend):
             raise BackendError("websocket-client package required for M-Lab")
         url = self._ws_url(UPLOAD_KEY)
         ws = self._open_ws(url)
+        self._current_ws = ws
         total_bytes = 0
         elapsed = 0.0
         payload = os.urandom(CHUNK_SIZE)
@@ -285,6 +303,7 @@ class MLabBackend(SpeedTestBackend):
                         },
                     )
         finally:
+            self._current_ws = None
             try:
                 ws.close()
             except (websocket.WebSocketException, OSError) as e:
