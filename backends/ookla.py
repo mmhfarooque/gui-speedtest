@@ -46,7 +46,27 @@ class OoklaBackend(SpeedTestBackend):
 
     @classmethod
     def available(cls) -> bool:
-        return shutil.which(BINARY) is not None
+        """True only if the `speedtest` binary on PATH is Ookla's official one.
+
+        Ubuntu/Debian ship a separate `speedtest-cli` package (sivel/speedtest-cli,
+        a Python wrapper) that is sometimes symlinked as `speedtest` and
+        accepts completely different arguments. Running our Ookla argv against
+        it produces empty JSON + confused error messages. Verify the identity
+        by parsing `--version` output for the "Ookla" string.
+        """
+        if not shutil.which(BINARY):
+            return False
+        try:
+            out = subprocess.run(
+                [BINARY, "--version"],
+                capture_output=True,
+                text=True,
+                timeout=5,
+                check=False,
+            )
+            return "Ookla" in (out.stdout + out.stderr)
+        except (OSError, subprocess.TimeoutExpired):
+            return False
 
     def cancel(self) -> None:
         """Terminate any running speedtest subprocess. Safe to call repeatedly."""

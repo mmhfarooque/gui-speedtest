@@ -1,3 +1,34 @@
+gui-speedtest (1.1.0-1) unstable; urgency=medium
+
+  * Ookla backend: availability check now verifies the `speedtest` binary
+    identifies as Ookla's official CLI (parsing `--version` output for
+    "Ookla"). The Ubuntu `speedtest-cli` package (sivel/speedtest-cli)
+    also installs as `speedtest` but accepts different arguments — running
+    our Ookla argv against it previously produced empty JSON output and
+    a confusing "Could not parse" error. Now the picker simply omits
+    Ookla when the wrong binary is on PATH.
+  * M-Lab backend: latency now measured as the WebSocket handshake round-trip
+    (create_connection timing) instead of HTTPS HEAD against the wss://
+    endpoint. M-Lab servers return 405 Method Not Allowed for HEAD, so every
+    sample failed in v1.0.x. Latency now shows real numbers.
+  * M-Lab backend: client IP / ISP / location now enriched via ipify +
+    ipwho.is so the GUI reports your actual connection instead of
+    "Unknown". Mirrors the Cloudflare fallback and OVH patterns.
+  * GUI: Cancel button during a running test. Start → "Cancel" (destructive
+    styling) while running → reverts to "Run Again" on completion. Calls
+    backend.cancel() which terminates Ookla subprocesses immediately; for
+    HTTP-based backends the current chunk finishes or times out before the
+    worker thread exits (phase-boundary check on self.cancelled).
+  * Packaging: AppStream metainfo.xml (data/io.github.mmhfarooque.GuiSpeedTest.metainfo.xml)
+    installed to /usr/share/metainfo/. Enables the app to appear with a
+    proper description in GNOME Software, KDE Discover, and other
+    AppStream-indexing software stores.
+  * Packaging: build-appimage.sh now implements the full python-appimage ->
+    extract AppDir -> linuxdeploy-plugin-gtk -> AppImage pipeline. Gated
+    behind repo variable APPIMAGE_READY=1 until end-to-end tested.
+
+ -- Mahmud Farooque <farooque7@gmail.com>  Sat, 18 Apr 2026 15:30:00 +0600
+
 gui-speedtest (1.0.1-1) unstable; urgency=medium
 
   * Security: bump websocket-client floor to >=1.8 (closes CVE-2024-5569

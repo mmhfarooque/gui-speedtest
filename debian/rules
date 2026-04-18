@@ -14,3 +14,5 @@ override_dh_auto_install:
 		debian/gui-speedtest/usr/share/applications/io.github.mmhfarooque.GuiSpeedTest.desktop
 	install -Dm644 data/icons/io.github.mmhfarooque.GuiSpeedTest.svg \
 		debian/gui-speedtest/usr/share/icons/hicolor/scalable/apps/io.github.mmhfarooque.GuiSpeedTest.svg
+	install -Dm644 data/io.github.mmhfarooque.GuiSpeedTest.metainfo.xml \
+		debian/gui-speedtest/usr/share/metainfo/io.github.mmhfarooque.GuiSpeedTest.metainfo.xml

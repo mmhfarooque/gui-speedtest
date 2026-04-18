@@ -28,7 +28,6 @@ import json
 import os
 import time
 import urllib.parse
-import urllib.request
 
 from .base import (
     BROWSER_UA,
@@ -41,7 +40,6 @@ from .base import (
     SpeedTestBackend,
     http_get,
     logger,
-    measure_latency,
     safe_decode,
     ssl_context,
 )
@@ -55,6 +53,8 @@ except ImportError:
 
 LOCATE_URL = "https://locate.measurementlab.net/v2/nearest/ndt/ndt7"
 SUBPROTOCOL = "net.measurementlab.ndt.v7"
+IPIFY_URL = "https://api.ipify.org?format=json"
+IPWHO_URL = "https://ipwho.is/"
 TEST_DURATION_S = 10
 CHUNK_SIZE = 8192  # 8 KiB per send — matches the ndt7 reference client default
 # Throttle progress callbacks during upload — emit roughly once per MiB so the
@@ -118,29 +118,85 @@ class MLabBackend(SpeedTestBackend):
         except BackendError:
             return ConnectionInfo(server="M-Lab (locate failed)")
         machine = server.get("machine", "unknown")
-        location = server.get("location", {}) or {}
+        server_loc = server.get("location", {}) or {}
+        loc_parts = [p for p in (server_loc.get("city", ""), server_loc.get("country", "")) if p]
+        server_str = f"M-Lab {machine}"
+        if loc_parts:
+            server_str += f" ({', '.join(loc_parts)})"
+
+        # M-Lab's locate API returns server info only — no client IP/ISP.
+        # Enrich via ipify + ipwho.is so the GUI shows real client geography
+        # instead of "Unknown". Same pattern as OVH and Cloudflare fallback.
+        ip, isp, city, region, country = "Unknown", "Unknown", "", "Unknown", ""
+        try:
+            ip = json.loads(safe_decode(http_get(IPIFY_URL, timeout=5))).get("ip", "Unknown")
+        except (*NETWORK_EXCEPTIONS, json.JSONDecodeError):
+            pass
+        if ip != "Unknown":
+            safe_ip = urllib.parse.quote(ip, safe=":")
+            try:
+                data = json.loads(safe_decode(http_get(IPWHO_URL + safe_ip, timeout=5)))
+                if data.get("success", True):
+                    conn = data.get("connection", {}) or {}
+                    isp = conn.get("isp") or conn.get("org") or "Unknown"
+                    city = data.get("city", "")
+                    region = data.get("region", "Unknown")
+                    country = data.get("country", "")
+            except (*NETWORK_EXCEPTIONS, json.JSONDecodeError):
+                pass
+
         return ConnectionInfo(
-            city=location.get("city", ""),
-            country=location.get("country", ""),
-            server=f"M-Lab {machine}",
+            ip=ip,
+            isp=isp,
+            city=city,
+            region=region,
+            country=country,
+            server=server_str,
         )
 
     def test_latency(
         self, samples: int = 10, callback: ProgressCallback = None
     ) -> LatencyResult:
-        """HTTPS HEAD to the M-Lab host as a proxy for RTT."""
+        """Measure RTT as WebSocket handshake time (TLS + HTTP upgrade).
+
+        Earlier versions tried HTTPS HEAD against the ws server; M-Lab ndt7
+        endpoints return 405 Method Not Allowed for HEAD, so every sample
+        failed. Timing the `create_connection` call covers the full round
+        trip (SYN + TLS + WS upgrade + response), which is a reasonable
+        — though slightly inflated — proxy for RTT."""
+        if not _HAS_WS:
+            return LatencyResult(failed=True)
         try:
-            ws_url = self._ws_url(DOWNLOAD_KEY)
+            url = self._ws_url(DOWNLOAD_KEY)
         except BackendError:
             return LatencyResult(failed=True)
-        https_url = ws_url.replace("wss://", "https://", 1)
 
-        def factory() -> urllib.request.Request:
-            return urllib.request.Request(
-                https_url, headers={"User-Agent": BROWSER_UA}, method="HEAD"
-            )
-
-        return measure_latency(factory, samples, callback)
+        times: list[float] = []
+        for i in range(samples):
+            try:
+                start = time.perf_counter()
+                ws = websocket.create_connection(
+                    url,
+                    subprotocols=[SUBPROTOCOL],
+                    header=[f"User-Agent: {BROWSER_UA}"],
+                    timeout=5,
+                    sslopt={"context": ssl_context()},
+                    max_size=MAX_FRAME_BYTES,
+                )
+                elapsed = (time.perf_counter() - start) * 1000
+                try:
+                    ws.close()
+                except (websocket.WebSocketException, OSError):
+                    pass
+                times.append(elapsed)
+                if callback:
+                    callback(
+                        "latency_sample",
+                        {"current": i + 1, "total": samples, "value_ms": elapsed},
+                    )
+            except (websocket.WebSocketException, OSError) as e:
+                logger.debug("M-Lab latency sample %d failed: %s", i + 1, e)
+        return LatencyResult.from_samples(times)
 
     def _open_ws(self, url: str) -> "websocket.WebSocket":
         """Open a WebSocket connection or raise BackendError. Centralises

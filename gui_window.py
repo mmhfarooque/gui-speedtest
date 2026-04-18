@@ -29,6 +29,7 @@ def run_gui(
             if initial_backend not in self.backends:
                 initial_backend = self.backends[0]
             self.backend = get_backend(initial_backend)
+            self.cancelled = False
 
             self.connect("close-request", self._on_close)
 
@@ -236,11 +237,16 @@ def run_gui(
             return False
 
         def _on_start(self, btn: Gtk.Button) -> None:
+            # Same button serves as Start / Cancel — label + CSS class tell
+            # them apart. If a test is running, this click is Cancel.
             if self.running:
+                self._cancel_test()
                 return
             self.running = True
-            btn.set_sensitive(False)
-            btn.set_label("Testing...")
+            self.cancelled = False
+            btn.set_label("Cancel")
+            btn.remove_css_class("suggested-action")
+            btn.add_css_class("destructive-action")
             self.backend_row.set_sensitive(False)
             self.dl_card["value"].set_text("—")
             self.dl_card["unit"].set_text("Mbps")
@@ -251,14 +257,33 @@ def run_gui(
             self.progress.set_fraction(0)
             threading.Thread(target=self._run_test, daemon=True).start()
 
+        def _cancel_test(self) -> None:
+            """Mark the run as cancelled and tell the backend to abort.
+            For Ookla this kills the subprocess immediately; for HTTP-based
+            backends the current chunk finishes (or times out) before the
+            thread checks self.cancelled and exits."""
+            self.cancelled = True
+            try:
+                self.backend.cancel()
+            except OSError:
+                pass
+            GLib.idle_add(self.status.set_label, "Cancelling…")
+            GLib.idle_add(self.start_btn.set_sensitive, False)
+
         def _finish_run(self, final_status: str) -> bool:
             """Runs on the main thread after all prior idle_adds have drained —
             this is what releases the `running` flag so there's no window where
             the button is still disabled but self.running is already False."""
-            self.progress.set_fraction(1.0)
-            self.progress.set_text("Complete")
-            self.status.set_label(final_status)
+            if self.cancelled:
+                self.progress.set_text("Cancelled")
+                self.status.set_label("Cancelled")
+            else:
+                self.progress.set_fraction(1.0)
+                self.progress.set_text("Complete")
+                self.status.set_label(final_status)
             self.start_btn.set_label("Run Again")
+            self.start_btn.remove_css_class("destructive-action")
+            self.start_btn.add_css_class("suggested-action")
             self.start_btn.set_sensitive(True)
             self.backend_row.set_sensitive(True)
             self.running = False
@@ -298,6 +323,9 @@ def run_gui(
                 if info.server:
                     GLib.idle_add(self.server_row.set_subtitle, info.server)
             end_phase()
+            if self.cancelled:
+                GLib.idle_add(self._finish_run, "Cancelled")
+                return
 
             def lat_cb(event: str, data: dict) -> None:
                 if event == "latency_sample":
@@ -328,6 +356,9 @@ def run_gui(
                         self.jitter_card["value"].set_text, f"{lat.jitter:.1f}"
                     )
             end_phase()
+            if self.cancelled:
+                GLib.idle_add(self._finish_run, "Cancelled")
+                return
 
             def dl_cb(event: str, data: dict) -> None:
                 if event == "download_chunk":
@@ -348,6 +379,9 @@ def run_gui(
                 GLib.idle_add(self.dl_card["value"].set_text, "N/A")
                 GLib.idle_add(self.dl_card["unit"].set_text, str(e))
             end_phase()
+            if self.cancelled:
+                GLib.idle_add(self._finish_run, "Cancelled")
+                return
 
             def ul_cb(event: str, data: dict) -> None:
                 if event == "upload_chunk":

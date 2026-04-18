@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>io.github.mmhfarooque.GuiSpeedTest</id>
+  <launchable type="desktop-id">io.github.mmhfarooque.GuiSpeedTest.desktop</launchable>
+  <name>GUI Speed Test for Linux</name>
+  <summary>Multi-backend internet speed test</summary>
+  <description>
+    <p>
+      Fast, no-nonsense internet speed test with a native GTK4 + libadwaita
+      interface that follows your system light/dark theme.
+    </p>
+    <p>Five backends behind one picker so you can run the test against whichever server you trust most:</p>
+    <ul>
+      <li>Cloudflare — global anycast, hits the nearest PoP (default)</li>
+      <li>Ookla Speedtest — wraps the official Ookla CLI</li>
+      <li>M-Lab NDT7 — academic/research-backed, non-commercial</li>
+      <li>LibreSpeed — open-source, configurable self-hosted server</li>
+      <li>OVH — European reference (download-only)</li>
+    </ul>
+    <p>
+      Command-line and JSON output modes are also available for
+      scripting and logging.
+    </p>
+  </description>
+  <url type="homepage">https://github.com/mmhfarooque/gui-speedtest</url>
+  <url type="bugtracker">https://github.com/mmhfarooque/gui-speedtest/issues</url>
+  <url type="vcs-browser">https://github.com/mmhfarooque/gui-speedtest</url>
+  <developer id="io.github.mmhfarooque">
+    <name>Mahmud Farooque</name>
+  </developer>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>GPL-3.0-or-later</project_license>
+  <categories>
+    <category>Network</category>
+    <category>Utility</category>
+  </categories>
+  <keywords>
+    <keyword>speedtest</keyword>
+    <keyword>bandwidth</keyword>
+    <keyword>internet</keyword>
+    <keyword>network</keyword>
+    <keyword>cloudflare</keyword>
+    <keyword>ookla</keyword>
+  </keywords>
+  <content_rating type="oars-1.1"/>
+  <releases>
+    <release version="1.1.0" date="2026-04-18">
+      <description>
+        <p>Ookla binary identity check, real M-Lab latency measurement, M-Lab client IP/ISP enrichment, in-test Cancel button, AppStream metainfo, AppImage support.</p>
+      </description>
+    </release>
+    <release version="1.0.1" date="2026-04-18">
+      <description>
+        <p>Security: websocket-client CVE-2024-5569 closed; M-Lab frame size cap. Packaging: 3.0 quilt source format, GTK 4.12 pin, find-based package discovery. CI: Node 24 action bumps, Python 3.10-3.13 matrix.</p>
+      </description>
+    </release>
+    <release version="1.0.0" date="2026-04-18">
+      <description>
+        <p>Initial release.</p>
+      </description>
+    </release>
+  </releases>
+</component>
