@@ -6,12 +6,21 @@ so the window code can evolve without churning the entry-point file.
 from __future__ import annotations
 
 import logging
+import os
 import threading
+from pathlib import Path
 
 from backends import available_backends, display_name_for, get_backend
 from backends.base import BackendError, format_speed
 
 logger = logging.getLogger("gui_speedtest")
+
+
+def _log_file_path() -> Path:
+    """Duplicated from gui_speedtest so this module has no back-import.
+    Must stay in sync with _log_path() there."""
+    base = os.environ.get("XDG_CACHE_HOME") or str(Path.home() / ".cache")
+    return Path(base) / "gui-speedtest" / "gui-speedtest.log"
 
 
 def run_gui(
@@ -50,6 +59,11 @@ def run_gui(
             header.set_title_widget(
                 Adw.WindowTitle(title=app_name, subtitle=f"v{app_version}")
             )
+            # Log button — opens an in-app viewer so users don't need a
+            # terminal to diagnose issues or share a trace with support.
+            log_btn = Gtk.Button(label="Log", tooltip_text="View application log")
+            log_btn.connect("clicked", self._on_show_log)
+            header.pack_end(log_btn)
             main_box.append(header)
 
             scroll = Gtk.ScrolledWindow(vexpand=True)
@@ -245,6 +259,68 @@ def run_gui(
             except OSError:
                 pass
             return False
+
+        def _on_show_log(self, _btn: Gtk.Button) -> None:
+            log_path = _log_file_path()
+            try:
+                text = log_path.read_text(encoding="utf-8", errors="replace")
+            except FileNotFoundError:
+                text = f"(Log file not found yet at {log_path}.\nRun a speed test first.)"
+            except OSError as e:
+                text = f"(Could not read log file: {e})"
+
+            win = Adw.Window(
+                transient_for=self,
+                modal=True,
+                title="Log",
+                default_width=820,
+                default_height=620,
+            )
+            outer = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
+            win.set_content(outer)
+
+            log_header = Adw.HeaderBar()
+            log_header.set_title_widget(
+                Adw.WindowTitle(title="Log", subtitle=str(log_path))
+            )
+            # Copy-all button — writes the full text to the system clipboard
+            # so users can paste it anywhere without selecting by hand.
+            copy_btn = Gtk.Button(label="Copy All", css_classes=["suggested-action"])
+            log_header.pack_end(copy_btn)
+            outer.append(log_header)
+
+            scroll = Gtk.ScrolledWindow(vexpand=True, hexpand=True)
+            outer.append(scroll)
+
+            buf = Gtk.TextBuffer()
+            buf.set_text(text)
+            text_view = Gtk.TextView(
+                buffer=buf,
+                editable=False,
+                cursor_visible=False,
+                monospace=True,
+                wrap_mode=Gtk.WrapMode.WORD_CHAR,
+                top_margin=8,
+                bottom_margin=8,
+                left_margin=12,
+                right_margin=12,
+            )
+            scroll.set_child(text_view)
+
+            def _on_copy(_b: Gtk.Button) -> None:
+                clip = win.get_display().get_clipboard()
+                clip.set(text)
+                copy_btn.set_label("Copied ✓")
+                # Reset the label after a moment so the user can click again.
+                GLib.timeout_add_seconds(2, lambda: (copy_btn.set_label("Copy All"), False)[1])
+
+            copy_btn.connect("clicked", _on_copy)
+
+            win.present()
+            # Scroll to the tail so the most recent events are visible first.
+            GLib.idle_add(
+                lambda: (text_view.scroll_to_iter(buf.get_end_iter(), 0.0, False, 0.0, 0.0), False)[1]
+            )
 
         def _on_start(self, btn: Gtk.Button) -> None:
             # Same button serves as Start / Cancel — label + CSS class tell

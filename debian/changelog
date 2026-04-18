@@ -1,3 +1,15 @@
+gui-speedtest (1.2.2-1) unstable; urgency=medium
+
+  * GUI: "Log" button in the header bar opens an in-app log viewer.
+    Shows the full content of ~/.cache/gui-speedtest/gui-speedtest.log
+    in a scrollable monospace text view with a "Copy All" button that
+    writes the entire log to the system clipboard. Users can diagnose
+    issues (and paste logs for support) without ever touching a terminal.
+  * Log viewer auto-scrolls to the tail on open so the most recent
+    events are visible first.
+
+ -- Mahmud Farooque <farooque7@gmail.com>  Sat, 18 Apr 2026 22:00:00 +0600
+
 gui-speedtest (1.2.1-1) unstable; urgency=medium
 
   * Persistent file logging. Every run writes DEBUG-level details to
