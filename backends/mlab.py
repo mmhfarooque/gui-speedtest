@@ -60,6 +60,10 @@ CHUNK_SIZE = 8192  # 8 KiB per send — matches the ndt7 reference client defaul
 # Throttle progress callbacks during upload — emit roughly once per MiB so the
 # GUI doesn't drown in updates on a fast link (60 Mbps ≈ 7 MB/s ≈ 7 calls/s).
 PROGRESS_EVERY_BYTES = CHUNK_SIZE * 128
+# Cap WebSocket frame payload at 16 MiB — ndt7 servers send small chunks
+# (8-64 KiB typical). A per-frame limit prevents a malicious or misbehaving
+# server from driving the process OOM with a single enormous frame.
+MAX_FRAME_BYTES = 16 * 1024 * 1024
 
 DOWNLOAD_KEY = "wss:///ndt/v7/download"
 UPLOAD_KEY = "wss:///ndt/v7/upload"
@@ -149,6 +153,7 @@ class MLabBackend(SpeedTestBackend):
                 header=[f"User-Agent: {BROWSER_UA}"],
                 timeout=TEST_DURATION_S + 5,
                 sslopt={"context": ssl_context()},
+                max_size=MAX_FRAME_BYTES,
             )
         except (websocket.WebSocketException, OSError) as e:
             raise BackendError(f"M-Lab WebSocket connection failed: {e}") from e

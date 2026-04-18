@@ -75,11 +75,17 @@ def _validate_url(raw: str) -> str | None:
     host = parsed.hostname or ""
     if not host:
         return None
+    # DNS lookup below is *informational only* — logging if the configured
+    # host resolves to a private address so a self-host misconfiguration is
+    # visible. It is NOT a security boundary: DNS can rebind between this
+    # check and the eventual urllib.request connection (TOCTOU), and only
+    # the first A record is inspected. Trust boundary is the user setting
+    # LIBRESPEED_URL; we don't treat the value as adversarial input.
     try:
         resolved = socket.gethostbyname(host)
         ip = ipaddress.ip_address(resolved)
         if ip.is_loopback or ip.is_private or ip.is_link_local:
-            logger.warning(
+            logger.info(
                 "LibreSpeed URL resolves to a non-public address (%s) — "
                 "assuming self-hosted deployment",
                 resolved,

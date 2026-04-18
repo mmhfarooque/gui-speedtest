@@ -1,3 +1,33 @@
+gui-speedtest (1.0.1-1) unstable; urgency=medium
+
+  * Security: bump websocket-client floor to >=1.8 (closes CVE-2024-5569
+    ReDoS in Sec-WebSocket-Protocol parser); cap upper bound at <3 so a
+    future 2.x major can't silently break the M-Lab backend.
+  * Security: cap M-Lab WebSocket frame payloads at 16 MiB via create_connection
+    max_size kwarg — defends against a malicious/misbehaving server driving
+    the process OOM with a single oversized frame.
+  * Packaging: switch debian/source/format from 3.0 (native) to 3.0 (quilt)
+    to resolve the conflict with a -1 Debian revision in changelog.
+  * Packaging: PEP 639 license metadata (SPDX expression + license-files),
+    setuptools>=77 build requirement; drop the deprecated
+    "License :: OSI Approved" classifier.
+  * Packaging: classifiers bumped to Development Status 5 - Production/Stable;
+    explicit Python 3.10/3.11/3.12/3.13 classifiers added.
+  * Packaging: switch setuptools package discovery to find with include
+    backends* — future sub-packages get picked up automatically.
+  * Packaging: pin gir1.2-gtk-4.0 (>= 4.12) so CssProvider.load_from_string
+    is guaranteed available at runtime.
+  * CI: migrate to Node 24 action majors — checkout@v6, setup-python@v6,
+    upload-artifact@v7, download-artifact@v8, action-gh-release@v3. Clears
+    the Node.js 20 deprecation warning ahead of the 2026-06-02 deadline.
+  * CI: Python matrix 3.10, 3.11, 3.12, 3.13 on lint+smoke jobs.
+  * Polish: refresh Chrome UA 120 -> 140 in the browser spoof string;
+    simplify _run_cli_latency return (dead var); document LibreSpeed
+    _validate_url DNS check as informational (TOCTOU window exists, not
+    a security boundary); drop unused WHEEL= line in build-appimage.sh.
+
+ -- Mahmud Farooque <farooque7@gmail.com>  Sat, 18 Apr 2026 14:45:00 +0600
+
 gui-speedtest (1.0.0-1) unstable; urgency=medium
 
   * Initial release.

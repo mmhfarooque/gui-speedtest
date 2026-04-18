@@ -18,7 +18,7 @@ from backends.base import BackendError, format_speed
 
 APP_NAME = "GUI Speed Test for Linux"
 APP_ID = "io.github.mmhfarooque.GuiSpeedTest"
-APP_VERSION = "1.0.0"
+APP_VERSION = "1.0.1"
 DEFAULT_BACKEND = "cloudflare"
 LATENCY_SAMPLES = 10
 
@@ -29,14 +29,15 @@ LATENCY_SAMPLES = 10
 CR_CLEAR = "\r\033[K"
 
 
-def _run_cli_latency(backend) -> tuple[object, str]:
+def _run_cli_latency(backend) -> str:
+    """Return a single human-readable latency summary line for the CLI."""
     try:
         lat = backend.test_latency(samples=LATENCY_SAMPLES)
     except BackendError as e:
-        return None, f"N/A ({e})"
+        return f"N/A ({e})"
     if lat.failed:
-        return lat, "N/A (all samples failed)"
-    return lat, (
+        return "N/A (all samples failed)"
+    return (
         f"{lat.avg:.1f} ms "
         f"(min {lat.min:.1f}, max {lat.max:.1f}, jitter {lat.jitter:.1f})"
     )
@@ -62,7 +63,7 @@ def run_cli(backend_name: str) -> None:
             print(f"  Server:   {info.server}")
 
     print(f"\n  Testing latency ({LATENCY_SAMPLES} samples)...", end="", flush=True)
-    lat, lat_text = _run_cli_latency(backend)
+    lat_text = _run_cli_latency(backend)
     print(f"{CR_CLEAR}  Latency:  {lat_text}")
 
     print("\n  Testing download speed...")

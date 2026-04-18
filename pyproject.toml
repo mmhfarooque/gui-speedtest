@@ -1,25 +1,29 @@
 [build-system]
-requires = ["setuptools>=61", "wheel"]
+requires = ["setuptools>=77", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "gui-speedtest"
-version = "1.0.0"
+version = "1.0.1"
 description = "GUI + CLI internet speed test for Linux with multiple backends (Cloudflare, Ookla, M-Lab NDT, LibreSpeed, OVH)"
 readme = "README.md"
 requires-python = ">=3.10"
-license = { text = "GPL-3.0-or-later" }
+license = "GPL-3.0-or-later"
+license-files = ["LICENSE"]
 authors = [{ name = "Mahmud Farooque", email = "farooque7@gmail.com" }]
 keywords = ["speedtest", "network", "bandwidth", "cloudflare", "ookla", "gtk4", "libadwaita"]
 classifiers = [
-    "Development Status :: 4 - Beta",
+    "Development Status :: 5 - Production/Stable",
     "Environment :: Console",
     "Environment :: X11 Applications :: GTK",
     "Intended Audience :: End Users/Desktop",
-    "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
     "Operating System :: POSIX :: Linux",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
     "Topic :: Internet",
     "Topic :: System :: Networking",
 ]
@@ -28,9 +32,12 @@ classifiers = [
 dependencies = []
 
 [project.optional-dependencies]
-mlab = ["websocket-client>=1.6"]
+# >=1.8 closes CVE-2024-5569 (ReDoS in Sec-WebSocket-Protocol parser,
+# patched in websocket-client 1.8.0). <3 pins below an unreleased major
+# so a future 2.x can't silently break the M-Lab backend.
+mlab = ["websocket-client>=1.8,<3"]
 gui = []  # GTK4/libadwaita come from system packages (python3-gi, gir1.2-adw-1)
-all = ["websocket-client>=1.6"]
+all = ["websocket-client>=1.8,<3"]
 
 [project.scripts]
 gui-speedtest = "gui_speedtest:main"
@@ -42,7 +49,11 @@ Issues = "https://github.com/mmhfarooque/gui-speedtest/issues"
 
 [tool.setuptools]
 py-modules = ["gui_speedtest", "gui_window"]
-packages = ["backends"]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["backends*"]
+exclude = ["tests*", "build*", "dist*"]
 
 # Note: we deliberately do NOT use [tool.setuptools.data-files] to install
 # the .desktop file and icon. That key is deprecated and places files outside

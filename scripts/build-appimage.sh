@@ -25,7 +25,6 @@ mkdir -p "$DIST_DIR" "$BUILD_DIR"
 
 echo "==> Building wheel"
 python3 -m build --wheel --outdir "$DIST_DIR"
-WHEEL=$(ls -t "$DIST_DIR"/gui_speedtest-*.whl | head -1)
 
 echo "==> Creating Python+app AppDir via python-appimage"
 # Generates AppDir with the wheel installed into a bundled CPython.

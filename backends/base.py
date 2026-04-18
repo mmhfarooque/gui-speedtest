@@ -21,9 +21,11 @@ from typing import Callable, Iterable, Optional
 
 ProgressCallback = Optional[Callable[[str, dict], None]]
 
+# Chrome major bumped roughly yearly — stale UAs raise Cloudflare's bot-score
+# and can trigger 403 on /meta. Refresh on a quarterly maintenance cadence.
 BROWSER_UA = (
     "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
-    "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+    "(KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36"
 )
 
 # Single source of truth for "this is a recoverable network failure" — used

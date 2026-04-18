@@ -17,8 +17,10 @@ Depends: ${misc:Depends},
          ${python3:Depends},
          python3,
          python3-gi,
-         gir1.2-gtk-4.0,
+         gir1.2-gtk-4.0 (>= 4.12),
          gir1.2-adw-1,
+# python3-websocket IS the websocket-client PyPI package on Debian/Ubuntu
+# (confusingly — not python3-websocket-client). Do not rename.
 Recommends: speedtest-cli,
             python3-websocket,
 Description: GUI + CLI internet speed test for Linux
