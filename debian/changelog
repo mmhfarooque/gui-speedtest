@@ -1,3 +1,14 @@
+gui-speedtest (1.2.3-1) unstable; urgency=medium
+
+  * GUI: download/upload cards now refresh continuously *during* a chunk
+    instead of only at chunk boundaries. run_chunks streams the response
+    in 64 KiB reads and emits progress callbacks every 256 KiB with the
+    live running speed. On slow links (e.g. OVH at 0.5 Mbps where the
+    10 MB chunk takes 2+ minutes) users see constant motion instead of a
+    frozen card. Cancel remains instantaneous (socket shutdown unaffected).
+
+ -- Mahmud Farooque <farooque7@gmail.com>  Sat, 18 Apr 2026 22:20:00 +0600
+
 gui-speedtest (1.2.2-1) unstable; urgency=medium
 
   * GUI: "Log" button in the header bar opens an in-app log viewer.

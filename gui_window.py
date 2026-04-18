@@ -452,7 +452,10 @@ def run_gui(
                 return
 
             def dl_cb(event: str, data: dict) -> None:
-                if event == "download_chunk":
+                # Streaming progress (mid-chunk) and chunk completion both
+                # refresh the card so users see continuous motion during a
+                # slow download instead of a frozen reading for minutes.
+                if event in ("download_chunk", "download_chunk_progress"):
                     GLib.idle_add(
                         self.status.set_label,
                         f"Download {data['label']}: "
@@ -475,7 +478,7 @@ def run_gui(
                 return
 
             def ul_cb(event: str, data: dict) -> None:
-                if event == "upload_chunk":
+                if event in ("upload_chunk", "upload_chunk_progress"):
                     GLib.idle_add(
                         self.status.set_label,
                         f"Upload {data['label']}: "

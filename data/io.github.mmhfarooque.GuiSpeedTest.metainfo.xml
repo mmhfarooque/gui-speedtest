@@ -44,6 +44,11 @@
   </keywords>
   <content_rating type="oars-1.1"/>
   <releases>
+    <release version="1.2.3" date="2026-04-18">
+      <description>
+        <p>Download/upload cards now update continuously during each chunk. Slow chunks (under 1 Mbps) no longer make the app look frozen.</p>
+      </description>
+    </release>
     <release version="1.2.2" date="2026-04-18">
       <description>
         <p>New "Log" button in the header bar opens an in-app log viewer with Copy All — no terminal needed to read or share the log.</p>

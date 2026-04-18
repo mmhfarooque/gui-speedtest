@@ -211,6 +211,14 @@ def run_chunks(
     """
     if backend is not None:
         backend._cancelled = False
+    # Streaming granularity: read 64 KiB at a time, emit a progress event
+    # every 256 KiB received so the GUI updates smoothly even on slow links
+    # (below 1 Mbps, a single chunk takes minutes — without streaming the
+    # UI looks frozen). Small enough for responsive cancel via socket
+    # shutdown, big enough to avoid callback thrash on fast links.
+    READ_BUF = 65536
+    PROGRESS_EVERY = 4 * READ_BUF  # 256 KiB
+
     chunks_list = list(chunks)
     results: list[float] = []
     for i, chunk in enumerate(chunks_list, 1):
@@ -221,18 +229,42 @@ def run_chunks(
             req = chunk.request_factory()
             logger.debug("%s: starting chunk %d/%d label=%s", event_name, i, len(chunks_list), chunk.label)
             start = time.perf_counter()
+            total_bytes = 0
+            next_report = PROGRESS_EVERY
             with urllib.request.urlopen(req, timeout=timeout, context=ssl_context()) as resp:
                 if backend is not None:
                     backend._current_resp = resp
                 try:
-                    body = resp.read()
+                    while True:
+                        piece = resp.read(READ_BUF)
+                        if not piece:
+                            break
+                        total_bytes += len(piece)
+                        if callback and total_bytes >= next_report:
+                            sub_elapsed = time.perf_counter() - start
+                            if sub_elapsed > 0:
+                                sub_speed = (total_bytes * 8) / (sub_elapsed * 1_000_000)
+                                callback(
+                                    event_name + "_progress",
+                                    {
+                                        "label": chunk.label,
+                                        "speed_mbps": sub_speed,
+                                        "bytes": total_bytes,
+                                        "current": i,
+                                        "total": len(chunks_list),
+                                    },
+                                )
+                            next_report += PROGRESS_EVERY
                 finally:
                     if backend is not None:
                         backend._current_resp = None
             elapsed = time.perf_counter() - start
             if elapsed <= 0:
                 continue
-            n = chunk.size_bytes if chunk.size_bytes > 0 else len(body)
+            # For upload chunks we declare size_bytes up front (we generated
+            # the body); for downloads size_bytes is 0 and the actual count
+            # is what we just streamed.
+            n = chunk.size_bytes if chunk.size_bytes > 0 else total_bytes
             speed = (n * 8) / (elapsed * 1_000_000)
             results.append(speed)
             logger.info("%s: chunk %s bytes=%d elapsed=%.2fs speed=%.2f Mbps",
