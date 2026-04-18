@@ -5,10 +5,13 @@ so the window code can evolve without churning the entry-point file.
 """
 from __future__ import annotations
 
+import logging
 import threading
 
 from backends import available_backends, display_name_for, get_backend
 from backends.base import BackendError, format_speed
+
+logger = logging.getLogger("gui_speedtest")
 
 
 def run_gui(
@@ -269,11 +272,12 @@ def run_gui(
             For Ookla this kills the subprocess immediately; for HTTP-based
             backends the current chunk finishes (or times out) before the
             thread checks self.cancelled and exits."""
+            logger.info("User clicked Cancel (backend=%s)", self.backend.name)
             self.cancelled = True
             try:
                 self.backend.cancel()
-            except OSError:
-                pass
+            except OSError as e:
+                logger.debug("_cancel_test: backend.cancel() raised %s", e)
             GLib.idle_add(self.status.set_label, "Cancelling…")
             GLib.idle_add(self.start_btn.set_sensitive, False)
 
@@ -303,13 +307,17 @@ def run_gui(
             # sit frozen during the actual slow work.
             phases = ["connect", "latency", "download", "upload"]
             phase_idx = [0]
+            logger.info("Run started: backend=%s", self.backend.name)
 
             def begin_phase(text: str) -> None:
+                logger.info("Phase start: %s", phases[phase_idx[0]] if phase_idx[0] < len(phases) else "?")
                 GLib.idle_add(self.progress.set_text, text)
                 GLib.idle_add(self.status.set_label, text)
 
             def end_phase() -> None:
+                name = phases[phase_idx[0]] if phase_idx[0] < len(phases) else "?"
                 phase_idx[0] += 1
+                logger.info("Phase end: %s (progress=%.0f%%)", name, phase_idx[0] / len(phases) * 100)
                 GLib.idle_add(
                     self.progress.set_fraction, phase_idx[0] / len(phases)
                 )

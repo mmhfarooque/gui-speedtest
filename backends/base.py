@@ -215,9 +215,11 @@ def run_chunks(
     results: list[float] = []
     for i, chunk in enumerate(chunks_list, 1):
         if backend is not None and backend._cancelled:
+            logger.info("%s: cancelled before chunk %d/%d", event_name, i, len(chunks_list))
             break
         try:
             req = chunk.request_factory()
+            logger.debug("%s: starting chunk %d/%d label=%s", event_name, i, len(chunks_list), chunk.label)
             start = time.perf_counter()
             with urllib.request.urlopen(req, timeout=timeout, context=ssl_context()) as resp:
                 if backend is not None:
@@ -233,6 +235,8 @@ def run_chunks(
             n = chunk.size_bytes if chunk.size_bytes > 0 else len(body)
             speed = (n * 8) / (elapsed * 1_000_000)
             results.append(speed)
+            logger.info("%s: chunk %s bytes=%d elapsed=%.2fs speed=%.2f Mbps",
+                        event_name, chunk.label, n, elapsed, speed)
             if callback:
                 callback(
                     event_name,
@@ -306,21 +310,20 @@ class SpeedTestBackend(ABC):
         Subclasses with additional cancellation semantics (Ookla's
         subprocess, M-Lab's WebSocket) override this — typically they call
         super().cancel() first to cover any HTTP enrichment paths."""
+        logger.info("cancel() called for backend=%s", self.name)
         self._cancelled = True
         resp = self._current_resp
         if resp is None:
+            logger.debug("cancel: no active response to close")
             return
-        # Walk urllib.response.addinfourl -> HTTPResponse -> BufferedReader
-        # -> raw SocketIO -> socket. The attribute path is a CPython impl
-        # detail but has been stable since 3.0. Fall back silently if it
-        # shifts in a future release.
         sock = None
         try:
             sock = resp.fp.raw._sock  # type: ignore[union-attr]
         except AttributeError:
-            pass
+            logger.debug("cancel: could not reach raw socket on response")
         if sock is not None:
             try:
                 sock.shutdown(socket.SHUT_RDWR)
+                logger.info("cancel: socket.shutdown SHUT_RDWR OK (backend=%s)", self.name)
             except OSError as e:
                 logger.debug("cancel: socket.shutdown failed: %s", e)

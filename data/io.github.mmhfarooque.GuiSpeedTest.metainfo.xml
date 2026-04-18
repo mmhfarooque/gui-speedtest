@@ -44,6 +44,11 @@
   </keywords>
   <content_rating type="oars-1.1"/>
   <releases>
+    <release version="1.2.1" date="2026-04-18">
+      <description>
+        <p>Persistent file logging at ~/.cache/gui-speedtest/gui-speedtest.log — rotating, always on. Per-chunk timings, phase transitions, cancel events recorded for diagnosis.</p>
+      </description>
+    </release>
     <release version="1.2.0" date="2026-04-18">
       <description>
         <p>Measurement accuracy: bigger Cloudflare upload chunks for correct saturation, OVH auto-picks nearest mirror (Gravelines or Beauharnois), M-Lab upload uses server-reported byte counts.</p>

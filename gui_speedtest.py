@@ -9,16 +9,18 @@ from __future__ import annotations
 import argparse
 import json
 import logging
+import logging.handlers
 import os
 import sys
 import time
+from pathlib import Path
 
 from backends import available_backends, get_backend
 from backends.base import BackendError, format_speed
 
 APP_NAME = "GUI Speed Test for Linux"
 APP_ID = "io.github.mmhfarooque.GuiSpeedTest"
-APP_VERSION = "1.2.0"
+APP_VERSION = "1.2.1"
 DEFAULT_BACKEND = "cloudflare"
 LATENCY_SAMPLES = 10
 
@@ -27,6 +29,49 @@ LATENCY_SAMPLES = 10
 # the tail "...nection..." dangling on screen. tput-style escape works
 # in any VT100-compatible terminal (i.e. effectively all of them).
 CR_CLEAR = "\r\033[K"
+
+
+def _log_path() -> Path:
+    """XDG-compliant log file location. Falls back to ~/.cache/ when
+    XDG_CACHE_HOME isn't set. Dir is created lazily on first open."""
+    base = os.environ.get("XDG_CACHE_HOME") or str(Path.home() / ".cache")
+    return Path(base) / "gui-speedtest" / "gui-speedtest.log"
+
+
+def _setup_logging(verbose: bool) -> None:
+    """Console handler (WARNING or DEBUG) + always-on rotating file
+    handler (DEBUG). The file is the canonical place to look when
+    something behaves oddly — users can paste it without re-running
+    with a --verbose flag."""
+    root = logging.getLogger("gui_speedtest")
+    root.setLevel(logging.DEBUG)
+    root.handlers.clear()
+
+    console = logging.StreamHandler()
+    console.setLevel(logging.DEBUG if verbose else logging.WARNING)
+    console.setFormatter(logging.Formatter("%(levelname)s %(name)s: %(message)s"))
+    root.addHandler(console)
+
+    try:
+        path = _log_path()
+        path.parent.mkdir(parents=True, exist_ok=True)
+        # 5 files * 1 MiB = 5 MiB cap total
+        file_handler = logging.handlers.RotatingFileHandler(
+            path, maxBytes=1_048_576, backupCount=4, encoding="utf-8"
+        )
+        file_handler.setLevel(logging.DEBUG)
+        file_handler.setFormatter(
+            logging.Formatter(
+                "%(asctime)s %(levelname)-7s %(name)s: %(message)s",
+                datefmt="%Y-%m-%dT%H:%M:%S",
+            )
+        )
+        root.addHandler(file_handler)
+        root.info("=== %s v%s starting (pid=%s) ===", APP_NAME, APP_VERSION, os.getpid())
+        root.debug("Log file: %s", path)
+    except OSError as e:
+        # Not fatal — just means we'll only have console output.
+        root.warning("Could not open log file (%s); file logging disabled", e)
 
 
 def _run_cli_latency(backend) -> str:
@@ -194,10 +239,7 @@ def main() -> None:
     parser.add_argument("--version", action="version", version=f"{APP_NAME} {APP_VERSION}")
     args = parser.parse_args()
 
-    logging.basicConfig(
-        level=logging.DEBUG if args.verbose else logging.WARNING,
-        format="%(levelname)s %(name)s: %(message)s",
-    )
+    _setup_logging(args.verbose)
 
     if args.librespeed_url:
         os.environ["LIBRESPEED_URL"] = args.librespeed_url

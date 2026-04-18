@@ -1,3 +1,17 @@
+gui-speedtest (1.2.1-1) unstable; urgency=medium
+
+  * Persistent file logging. Every run writes DEBUG-level details to
+    ~/.cache/gui-speedtest/gui-speedtest.log (XDG-compliant, respects
+    XDG_CACHE_HOME). Rotating, 5 files x 1 MiB cap. Console remains
+    WARNING-level unless --verbose is passed. Makes it possible to
+    diagnose "stuck"-looking runs without re-running with extra flags.
+  * Log content includes: per-chunk bytes/elapsed/speed, phase start
+    and end transitions, cancel requests, socket.shutdown outcomes,
+    mirror probe results, and exception tracebacks at DEBUG.
+  * No behavioural changes to the speed test itself.
+
+ -- Mahmud Farooque <farooque7@gmail.com>  Sat, 18 Apr 2026 21:40:00 +0600
+
 gui-speedtest (1.2.0-1) unstable; urgency=medium
 
   * Cloudflare: upload chunk sizes bumped from 500K-5M to 1M-25M so TCP
