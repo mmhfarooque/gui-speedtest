@@ -1,0 +1,9 @@
+gui-speedtest (1.0.0-1) unstable; urgency=medium
+
+  * Initial release.
+  * Multi-backend architecture: Cloudflare (default), Ookla, M-Lab NDT7,
+    LibreSpeed, OVH.
+  * GTK4 + libadwaita GUI with auto theme sync.
+  * CLI and JSON output modes; --backend, --librespeed-url flags.
+
+ -- Mahmud Farooque <farooque7@gmail.com>  Sat, 18 Apr 2026 12:30:00 +0600

@@ -1,0 +1,12 @@
+[Desktop Entry]
+Type=Application
+Name=GUI Speed Test for Linux
+GenericName=Internet Speed Test
+Comment=Test your internet download, upload, and latency
+Exec=gui-speedtest --gui
+Icon=io.github.mmhfarooque.GuiSpeedTest
+Terminal=false
+Categories=Network;Utility;
+Keywords=speed;internet;bandwidth;network;test;speedtest;cloudflare;ookla;
+StartupNotify=true
+StartupWMClass=io.github.mmhfarooque.GuiSpeedTest

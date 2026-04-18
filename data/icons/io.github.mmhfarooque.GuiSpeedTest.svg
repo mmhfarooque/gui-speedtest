@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#4A90E2"/>
+      <stop offset="100%" stop-color="#2C5FA8"/>
+    </linearGradient>
+    <linearGradient id="gauge" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#2ECC71"/>
+      <stop offset="50%" stop-color="#F1C40F"/>
+      <stop offset="100%" stop-color="#E74C3C"/>
+    </linearGradient>
+  </defs>
+  <rect x="4" y="4" width="120" height="120" rx="24" fill="url(#bg)"/>
+  <path d="M 28 80 A 36 36 0 0 1 100 80" fill="none" stroke="url(#gauge)" stroke-width="10" stroke-linecap="round"/>
+  <circle cx="64" cy="80" r="6" fill="#FFFFFF"/>
+  <line x1="64" y1="80" x2="88" y2="54" stroke="#FFFFFF" stroke-width="5" stroke-linecap="round"/>
+  <text x="64" y="108" text-anchor="middle" font-family="sans-serif" font-size="13" font-weight="700" fill="#FFFFFF">Mbps</text>
+</svg>

@@ -1,0 +1,54 @@
+[build-system]
+requires = ["setuptools>=61", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "gui-speedtest"
+version = "1.0.0"
+description = "GUI + CLI internet speed test for Linux with multiple backends (Cloudflare, Ookla, M-Lab NDT, LibreSpeed, OVH)"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "GPL-3.0-or-later" }
+authors = [{ name = "Mahmud Farooque", email = "farooque7@gmail.com" }]
+keywords = ["speedtest", "network", "bandwidth", "cloudflare", "ookla", "gtk4", "libadwaita"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Console",
+    "Environment :: X11 Applications :: GTK",
+    "Intended Audience :: End Users/Desktop",
+    "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Topic :: Internet",
+    "Topic :: System :: Networking",
+]
+
+# Runtime deps are all stdlib. Optional extras enable specific backends.
+dependencies = []
+
+[project.optional-dependencies]
+mlab = ["websocket-client>=1.6"]
+gui = []  # GTK4/libadwaita come from system packages (python3-gi, gir1.2-adw-1)
+all = ["websocket-client>=1.6"]
+
+[project.scripts]
+gui-speedtest = "gui_speedtest:main"
+
+[project.urls]
+Homepage = "https://github.com/mmhfarooque/gui-speedtest"
+Repository = "https://github.com/mmhfarooque/gui-speedtest"
+Issues = "https://github.com/mmhfarooque/gui-speedtest/issues"
+
+[tool.setuptools]
+py-modules = ["gui_speedtest", "gui_window"]
+packages = ["backends"]
+
+# Note: we deliberately do NOT use [tool.setuptools.data-files] to install
+# the .desktop file and icon. That key is deprecated and places files outside
+# the wheel's package tree, which plays badly with pip + user site-packages.
+#
+# For native packages (.deb, .rpm, AppImage) the packaging layer installs the
+# data/ files directly — see debian/rules. Pip-installed users get the CLI
+# and GUI binaries but not desktop-environment registration; they can launch
+# `gui-speedtest --gui` from a terminal.

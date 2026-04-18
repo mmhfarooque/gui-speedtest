@@ -1,0 +1,15 @@
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+build/
+dist/
+*.deb
+*.AppImage
+.venv/
+.ruff_cache/
+debian/.debhelper/
+debian/files
+debian/*.log
+debian/*.substvars
+debian/gui-speedtest/

@@ -1,0 +1,16 @@
+#!/usr/bin/make -f
+
+export PYBUILD_NAME=gui-speedtest
+
+%:
+	dh $@ --with python3 --buildsystem=pybuild
+
+# pyproject.toml deliberately omits data-files (see comment in that file) so
+# pybuild only installs the Python module + backends package. This override
+# is the canonical install path for the .desktop file and icon on .deb.
+override_dh_auto_install:
+	dh_auto_install
+	install -Dm644 data/io.github.mmhfarooque.GuiSpeedTest.desktop \
+		debian/gui-speedtest/usr/share/applications/io.github.mmhfarooque.GuiSpeedTest.desktop
+	install -Dm644 data/icons/io.github.mmhfarooque.GuiSpeedTest.svg \
+		debian/gui-speedtest/usr/share/icons/hicolor/scalable/apps/io.github.mmhfarooque.GuiSpeedTest.svg

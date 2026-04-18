@@ -1,0 +1,96 @@
+name: Release
+
+# Triggered by pushing a tag like v1.0.0. Builds sdist+wheel, .deb, and
+# AppImage in parallel and attaches all artifacts to a GitHub Release.
+
+on:
+  push:
+    tags: ["v*"]
+
+jobs:
+  pypi-artifacts:
+    name: Build sdist + wheel
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install build
+      - run: python -m build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pypi
+          path: dist/*
+
+  deb:
+    name: Build .deb (Ubuntu 24.04)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install build deps
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential debhelper dh-python \
+            pybuild-plugin-pyproject python3-all python3-setuptools devscripts
+      - name: Build package
+        run: dpkg-buildpackage -us -uc -b
+      - name: Collect artifacts
+        run: |
+          mkdir -p dist-deb
+          mv ../gui-speedtest_*.deb dist-deb/ || true
+      - uses: actions/upload-artifact@v4
+        with:
+          name: deb
+          path: dist-deb/*.deb
+
+  appimage:
+    name: Build AppImage
+    runs-on: ubuntu-22.04
+    # GATE: only runs when the repo has APPIMAGE_READY=1 set in repo Variables.
+    # Flip this after scripts/build-appimage.sh has been finished (the GTK
+    # bundling TODO). Until then, tagging a release won't publish a broken
+    # AppImage.
+    if: vars.APPIMAGE_READY == '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install tooling
+        run: |
+          pip install python-appimage build
+          sudo apt-get update
+          sudo apt-get install -y libgtk-4-dev libadwaita-1-dev
+          wget -O linuxdeploy https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage
+          wget -O linuxdeploy-plugin-gtk https://raw.githubusercontent.com/linuxdeploy/linuxdeploy-plugin-gtk/master/linuxdeploy-plugin-gtk.sh
+          chmod +x linuxdeploy linuxdeploy-plugin-gtk
+          sudo mv linuxdeploy linuxdeploy-plugin-gtk /usr/local/bin/
+      - name: Build
+        run: ./scripts/build-appimage.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: appimage
+          path: dist/*.AppImage
+
+  release:
+    name: Create GitHub Release
+    needs: [pypi-artifacts, deb]
+    # The appimage job is gated; if it ran, include its artifacts too.
+    # Otherwise the release still ships pypi + deb.
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+      - name: Create release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            artifacts/pypi/*
+            artifacts/deb/*
+            artifacts/appimage/*
+          fail_on_unmatched_files: false
+          generate_release_notes: true
