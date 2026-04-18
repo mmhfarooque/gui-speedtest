@@ -8,12 +8,17 @@ from __future__ import annotations
 import logging
 import os
 import threading
+from collections import deque
 from pathlib import Path
 
 from backends import available_backends, display_name_for, get_backend
 from backends.base import BackendError, format_speed
 
 logger = logging.getLogger("gui_speedtest")
+
+# Accent colour used by the speed-card charts and ping bars. Matches the
+# orange of the Start button so the graph visually ties to the action.
+_CHART_ACCENT = (0.90, 0.38, 0.10)  # ~ libadwaita "orange-4"
 
 
 def _log_file_path() -> Path:
@@ -32,17 +37,100 @@ def run_gui(
     gi.require_version("Adw", "1")
     from gi.repository import Adw, GLib, Gtk
 
+    class _Sparkline(Gtk.DrawingArea):
+        """Rolling line chart of recent speed samples.
+
+        Used inside the download and upload speed cards to show live
+        throughput history without claiming more screen real estate.
+        Auto-scales Y to max-in-window; fills under the line at low
+        alpha so the big number on top stays readable."""
+
+        def __init__(self, max_points: int = 120) -> None:
+            super().__init__()
+            self._samples: deque[float] = deque(maxlen=max_points)
+            self.set_content_height(38)
+            self.set_hexpand(True)
+            self.set_draw_func(self._draw)
+
+        def add_sample(self, value: float) -> None:
+            self._samples.append(max(float(value), 0.0))
+            self.queue_draw()
+
+        def clear(self) -> None:
+            self._samples.clear()
+            self.queue_draw()
+
+        def _draw(self, _area, cr, width: int, height: int) -> None:
+            if len(self._samples) < 2:
+                return
+            peak = max(self._samples)
+            if peak <= 0:
+                return
+            r, g, b = _CHART_ACCENT
+            n = len(self._samples)
+            step = width / (n - 1)
+            cr.set_line_width(1.5)
+            cr.set_source_rgb(r, g, b)
+            cr.move_to(0, height - (self._samples[0] / peak) * (height - 2) - 1)
+            for i, v in enumerate(self._samples):
+                cr.line_to(i * step, height - (v / peak) * (height - 2) - 1)
+            cr.stroke_preserve()
+            # Fill underneath — low alpha so the speed number above is
+            # still the visual focus.
+            cr.line_to(width, height)
+            cr.line_to(0, height)
+            cr.close_path()
+            cr.set_source_rgba(r, g, b, 0.18)
+            cr.fill()
+
+    class _PingBars(Gtk.DrawingArea):
+        """Per-sample latency bars — one thin vertical bar per ping.
+        Shows both the average spread (jitter) and any outliers in a
+        glance. Auto-scales Y to max-seen ping."""
+
+        def __init__(self, expected_samples: int = 10) -> None:
+            super().__init__()
+            self._samples: list[float] = []
+            self._capacity = expected_samples
+            self.set_content_height(28)
+            self.set_hexpand(True)
+            self.set_draw_func(self._draw)
+
+        def add_sample(self, value_ms: float) -> None:
+            self._samples.append(max(float(value_ms), 0.0))
+            self.queue_draw()
+
+        def clear(self) -> None:
+            self._samples.clear()
+            self.queue_draw()
+
+        def _draw(self, _area, cr, width: int, height: int) -> None:
+            if not self._samples:
+                return
+            peak = max(self._samples) or 1.0
+            slots = max(self._capacity, len(self._samples))
+            # Each bar occupies 1/slots of the width with a 2px gutter.
+            bar_w = max(2.0, (width / slots) - 2)
+            r, g, b = _CHART_ACCENT
+            cr.set_source_rgb(r, g, b)
+            for i, v in enumerate(self._samples):
+                bar_h = max(1.0, (v / peak) * (height - 2))
+                x = i * (bar_w + 2)
+                cr.rectangle(x, height - bar_h, bar_w, bar_h)
+            cr.fill()
+
     class SpeedTestWindow(Adw.ApplicationWindow):
         def __init__(self, app: Adw.Application, initial_backend: str) -> None:
             super().__init__(application=app, title=app_name)
-            # Default size picked to show every control on first open without
-            # scrolling: speed cards + latency row + 5 connection rows +
-            # progress + status + button + margins ~= 840 px tall.
-            self.set_default_size(580, 860)
-            # Floor — stops the user accidentally shrinking the window to a
-            # state where the cards overlap or the Start button is hidden.
-            # ScrolledWindow handles anything taller than this gracefully.
-            self.set_size_request(480, 640)
+            # Default size picked to show every control on first open
+            # without scrolling: speed cards (now with sparklines, ~170px),
+            # latency row (with ping bars, ~120px), 5 connection rows,
+            # progress + status + button + margins ~= 920 px tall.
+            self.set_default_size(600, 940)
+            # Floor — stops the user accidentally shrinking the window to
+            # a state where the cards overlap or the Start button is
+            # hidden. ScrolledWindow handles anything taller gracefully.
+            self.set_size_request(500, 680)
             self.running = False
             self.backends = available_backends()
             if initial_backend not in self.backends:
@@ -98,7 +186,7 @@ def run_gui(
             )
             content.append(lat_row)
 
-            self.ping_card = self._make_stat_card("Ping")
+            self.ping_card = self._make_stat_card("Ping", with_bars=True)
             self.jitter_card = self._make_stat_card("Jitter")
             lat_row.append(self.ping_card["frame"])
             lat_row.append(self.jitter_card["frame"])
@@ -162,12 +250,14 @@ def run_gui(
             box = Gtk.Box(
                 orientation=Gtk.Orientation.VERTICAL,
                 spacing=4,
-                halign=Gtk.Align.CENTER,
+                halign=Gtk.Align.FILL,
             )
             frame.set_child(box)
             box.append(
                 Gtk.Label(
-                    label=label.upper(), css_classes=["speed-label", "dim-label"]
+                    label=label.upper(),
+                    css_classes=["speed-label", "dim-label"],
+                    halign=Gtk.Align.CENTER,
                 )
             )
             val_box = Gtk.Box(
@@ -185,19 +275,23 @@ def run_gui(
             )
             val_box.append(val)
             val_box.append(unit)
-            return {"frame": frame, "value": val, "unit": unit}
+            chart = _Sparkline()
+            box.append(chart)
+            return {"frame": frame, "value": val, "unit": unit, "chart": chart}
 
-        def _make_stat_card(self, label: str) -> dict:
+        def _make_stat_card(self, label: str, with_bars: bool = False) -> dict:
             frame = Gtk.Frame(css_classes=["stat-card"])
             box = Gtk.Box(
                 orientation=Gtk.Orientation.VERTICAL,
                 spacing=2,
-                halign=Gtk.Align.CENTER,
+                halign=Gtk.Align.FILL,
             )
             frame.set_child(box)
             box.append(
                 Gtk.Label(
-                    label=label.upper(), css_classes=["speed-label", "dim-label"]
+                    label=label.upper(),
+                    css_classes=["speed-label", "dim-label"],
+                    halign=Gtk.Align.CENTER,
                 )
             )
             val_box = Gtk.Box(
@@ -215,7 +309,12 @@ def run_gui(
             )
             val_box.append(val)
             val_box.append(unit)
-            return {"frame": frame, "value": val, "unit": unit}
+            out = {"frame": frame, "value": val, "unit": unit}
+            if with_bars:
+                bars = _PingBars(expected_samples=latency_samples)
+                box.append(bars)
+                out["bars"] = bars
+            return out
 
         def _update_speed(self, card: dict, speed_mbps: float) -> None:
             if speed_mbps >= 1000:
@@ -340,6 +439,12 @@ def run_gui(
             self.ul_card["unit"].set_text("Mbps")
             self.ping_card["value"].set_text("—")
             self.jitter_card["value"].set_text("—")
+            # Reset graphs so the previous run doesn't bleed into the new
+            # one — users expect Run Again to start from zero.
+            self.dl_card["chart"].clear()
+            self.ul_card["chart"].clear()
+            if "bars" in self.ping_card:
+                self.ping_card["bars"].clear()
             self.progress.set_fraction(0)
             threading.Thread(target=self._run_test, daemon=True).start()
 
@@ -428,6 +533,9 @@ def run_gui(
                     GLib.idle_add(
                         self.ping_card["value"].set_text, f"{data['value_ms']:.0f}"
                     )
+                    # Live ping histogram — one bar per completed sample.
+                    if "bars" in self.ping_card:
+                        GLib.idle_add(self.ping_card["bars"].add_sample, data["value_ms"])
 
             begin_phase("Testing latency...")
             try:
@@ -462,6 +570,7 @@ def run_gui(
                         f"{format_speed(data['speed_mbps'])}",
                     )
                     GLib.idle_add(self._update_speed, self.dl_card, data["speed_mbps"])
+                    GLib.idle_add(self.dl_card["chart"].add_sample, data["speed_mbps"])
 
             begin_phase("Testing download...")
             try:
@@ -485,6 +594,7 @@ def run_gui(
                         f"{format_speed(data['speed_mbps'])}",
                     )
                     GLib.idle_add(self._update_speed, self.ul_card, data["speed_mbps"])
+                    GLib.idle_add(self.ul_card["chart"].add_sample, data["speed_mbps"])
 
             begin_phase("Testing upload...")
             try:

@@ -1,3 +1,21 @@
+gui-speedtest (1.3.0-1) unstable; urgency=medium
+
+  * GUI: live sparkline chart inside each speed card. Download and upload
+    cards now show a rolling history of instantaneous speed under the big
+    number, updated every ~256 KB received (or whatever the streaming
+    callback cadence is for the active backend). Persists after the test
+    so you can see the shape of the run at a glance.
+  * GUI: ping card now has a bar histogram — one vertical bar per
+    latency sample, so outliers and spread (jitter) are visible at a
+    glance alongside the average.
+  * Drawn with Cairo via Gtk.DrawingArea — no new dependencies. Auto-scales
+    Y to peak-in-window, theme-agnostic (fixed orange accent matching the
+    Start button), ~40 LOC per widget.
+  * Default window size bumped 580x860 -> 600x940 to keep the new charts
+    visible on first open without scrolling. Minimum 500x680.
+
+ -- Mahmud Farooque <farooque7@gmail.com>  Sat, 18 Apr 2026 22:50:00 +0600
+
 gui-speedtest (1.2.3-1) unstable; urgency=medium
 
   * GUI: download/upload cards now refresh continuously *during* a chunk
