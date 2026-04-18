@@ -1,5 +1,9 @@
 [build-system]
-requires = ["setuptools>=77", "wheel"]
+# Staying on >=61 until Ubuntu 26.04 (setuptools 75+) is the baseline —
+# then migrate to PEP 639 (SPDX license string + license-files), which
+# requires setuptools>=77. Ubuntu 24.04 ships setuptools 68.x and rejects
+# the SPDX form at build time.
+requires = ["setuptools>=61", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -8,8 +12,7 @@ version = "1.0.1"
 description = "GUI + CLI internet speed test for Linux with multiple backends (Cloudflare, Ookla, M-Lab NDT, LibreSpeed, OVH)"
 readme = "README.md"
 requires-python = ">=3.10"
-license = "GPL-3.0-or-later"
-license-files = ["LICENSE"]
+license = { text = "GPL-3.0-or-later" }
 authors = [{ name = "Mahmud Farooque", email = "farooque7@gmail.com" }]
 keywords = ["speedtest", "network", "bandwidth", "cloudflare", "ookla", "gtk4", "libadwaita"]
 classifiers = [
@@ -17,6 +20,7 @@ classifiers = [
     "Environment :: Console",
     "Environment :: X11 Applications :: GTK",
     "Intended Audience :: End Users/Desktop",
+    "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
     "Operating System :: POSIX :: Linux",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3 :: Only",

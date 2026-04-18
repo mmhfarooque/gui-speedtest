@@ -8,9 +8,9 @@ gui-speedtest (1.0.1-1) unstable; urgency=medium
     the process OOM with a single oversized frame.
   * Packaging: switch debian/source/format from 3.0 (native) to 3.0 (quilt)
     to resolve the conflict with a -1 Debian revision in changelog.
-  * Packaging: PEP 639 license metadata (SPDX expression + license-files),
-    setuptools>=77 build requirement; drop the deprecated
-    "License :: OSI Approved" classifier.
+  * Packaging: PEP 639 SPDX license migration deferred — Ubuntu 24.04 ships
+    setuptools 68.x which rejects the `license = "..."` string form.
+    Revisit when Ubuntu 26.04 (setuptools 75+) is the .deb build baseline.
   * Packaging: classifiers bumped to Development Status 5 - Production/Stable;
     explicit Python 3.10/3.11/3.12/3.13 classifiers added.
   * Packaging: switch setuptools package discovery to find with include
