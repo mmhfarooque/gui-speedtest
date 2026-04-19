@@ -113,8 +113,12 @@ jobs:
     # GATE: flatpak bundles for attaching to GitHub Releases. Flathub
     # submission is a separate per-manifest PR flow.
     if: vars.FLATPAK_READY == '1'
+    # Container image is provided by the flatpak-github-actions project
+    # (maintainer bilelmoussaoui). ghcr.io/flathub/flatpak-builder:gnome-47
+    # does NOT exist — previous tag attempted that image and got
+    # "manifest unknown" from the registry.
     container:
-      image: ghcr.io/flathub/flatpak-builder:gnome-47
+      image: bilelmoussaoui/flatpak-github-actions:gnome-47
       options: --privileged
     steps:
       - uses: actions/checkout@v6

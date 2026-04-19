@@ -1,3 +1,13 @@
+gui-speedtest (1.6.2-1) unstable; urgency=medium
+
+  * Workflow fix: Flatpak container image name. Previous tag used
+    ghcr.io/flathub/flatpak-builder:gnome-47, which returned "manifest
+    unknown" from the registry. Switched to the canonical
+    bilelmoussaoui/flatpak-github-actions:gnome-47 image. No runtime
+    changes; same code as 1.6.1/1.6.0.
+
+ -- Mahmud Farooque <farooque7@gmail.com>  Sun, 19 Apr 2026 16:15:00 +0600
+
 gui-speedtest (1.6.1-1) unstable; urgency=medium
 
   * No code changes — packaging-only bump to publish the first release

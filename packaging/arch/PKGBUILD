@@ -1,6 +1,6 @@
 # Maintainer: Mahmud Farooque <farooque7@gmail.com>
 pkgname=gui-speedtest
-pkgver=1.6.1
+pkgver=1.6.2
 pkgrel=1
 pkgdesc="Native GTK4 + libadwaita internet speed test with Cloudflare, Ookla, M-Lab and LibreSpeed backends"
 arch=('any')
