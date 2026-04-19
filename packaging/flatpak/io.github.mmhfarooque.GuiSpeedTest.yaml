@@ -1,6 +1,7 @@
 app-id: io.github.mmhfarooque.GuiSpeedTest
+# GNOME 48 runtime — 47 went EOL 2025-10-15. Bump when 48 does too.
 runtime: org.gnome.Platform
-runtime-version: '47'
+runtime-version: '48'
 sdk: org.gnome.Sdk
 command: gui-speedtest
 
@@ -14,20 +15,15 @@ finish-args:
   - --socket=fallback-x11
   - --device=dri
 
-modules:
-  # websocket-client for the M-Lab backend. Using a vendored tarball avoids
-  # a network fetch during Flathub build. Update this block when bumping the
-  # pin in pyproject.toml.
-  - name: python3-websocket-client
-    buildsystem: simple
-    build-commands:
-      - pip3 install --verbose --exists-action=i --no-index --find-links="file://${PWD}"
-        --prefix=${FLATPAK_DEST} websocket-client
-    sources:
-      - type: file
-        url: https://files.pythonhosted.org/packages/source/w/websocket-client/websocket-client-1.8.0.tar.gz
-        sha256: 3239df9f44da632f96012472805d40a23281a991027ce11d2f45a6f24ac4c3da
+# Note on M-Lab backend: the Flatpak build does NOT bundle websocket-client
+# (the old pypi `/packages/source/w/` URL pattern was deprecated, and
+# vendoring via flatpak-pip-generator adds maintenance overhead). The M-Lab
+# backend auto-hides when the module is unimportable — Flatpak users see the
+# other three backends (Cloudflare / Ookla / LibreSpeed). A future revision
+# can bundle websocket-client via flatpak-pip-generator for a Flathub
+# submission.
 
+modules:
   - name: gui-speedtest
     buildsystem: simple
     build-commands:

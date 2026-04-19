@@ -118,7 +118,7 @@ jobs:
     # does NOT exist — previous tag attempted that image and got
     # "manifest unknown" from the registry.
     container:
-      image: bilelmoussaoui/flatpak-github-actions:gnome-47
+      image: bilelmoussaoui/flatpak-github-actions:gnome-48
       options: --privileged
     steps:
       - uses: actions/checkout@v6

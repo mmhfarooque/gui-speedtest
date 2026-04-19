@@ -1,3 +1,13 @@
+gui-speedtest (1.6.3-1) unstable; urgency=medium
+
+  * Flatpak workflow fix: bump runtime 47 -> 48 (GNOME 47 went EOL
+    2025-10-15), drop websocket-client module (old pypi URL scheme is
+    deprecated; M-Lab backend will be unavailable in the Flatpak build
+    but the other three backends work — matches the available() filter's
+    graceful-degradation contract). Same app code as 1.6.0.
+
+ -- Mahmud Farooque <farooque7@gmail.com>  Sun, 19 Apr 2026 16:30:00 +0600
+
 gui-speedtest (1.6.2-1) unstable; urgency=medium
 
   * Workflow fix: Flatpak container image name. Previous tag used

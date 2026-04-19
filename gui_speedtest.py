@@ -20,7 +20,7 @@ from backends.base import BackendError, format_speed
 
 APP_NAME = "GUI Speed Test for Linux"
 APP_ID = "io.github.mmhfarooque.GuiSpeedTest"
-APP_VERSION = "1.6.2"
+APP_VERSION = "1.6.3"
 DEFAULT_BACKEND = "cloudflare"
 LATENCY_SAMPLES = 10
 
