@@ -1,3 +1,12 @@
+gui-speedtest (1.6.17-1) unstable; urgency=medium
+
+  * README: add a detailed Uninstall section covering the one-command
+    path (same install.sh with --uninstall), per-format manual commands
+    (apt/dnf/zypper/pacman/AUR/AppImage/Flatpak/Snap/pip), user-data
+    cleanup (~/.cache/gui-speedtest/), and the reinstall shortcut.
+
+ -- Mahmud Farooque <farooque7@gmail.com>  Sun, 19 Apr 2026 20:30:00 +0600
+
 gui-speedtest (1.6.16-1) unstable; urgency=medium
 
   * Ship install.sh + uninstall.sh + reinstall.sh alongside the package.

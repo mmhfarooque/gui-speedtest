@@ -131,6 +131,99 @@ No `.desktop` registration — launch from a terminal with `gui-speedtest --gui`
 
 ---
 
+## Uninstall
+
+### One-command uninstall (any format)
+
+The same `install.sh` knows how to remove whichever format is installed — it tries every path quietly and reports what it found:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/mmhfarooque/gui-speedtest/main/install.sh | bash -s -- --uninstall
+```
+
+Or if you still have the repo cloned:
+
+```sh
+cd gui-speedtest && bash install.sh --uninstall
+# (equivalent shortcut:  bash uninstall.sh)
+```
+
+### Manual uninstall — pick the format you installed
+
+If you'd rather not re-download the installer:
+
+**Debian / Ubuntu / Mint / Pop!_OS:**
+```sh
+sudo apt remove gui-speedtest
+# Or wipe config/cache as well:
+sudo apt purge gui-speedtest
+```
+
+**Fedora / RHEL / Rocky / Alma:**
+```sh
+sudo dnf remove gui-speedtest
+```
+
+**openSUSE:**
+```sh
+sudo zypper rm gui-speedtest
+```
+
+**Arch / Manjaro (AUR):**
+```sh
+yay -R gui-speedtest          # or: sudo pacman -R gui-speedtest
+```
+
+**AppImage:**
+```sh
+rm ~/.local/bin/gui-speedtest
+rm ~/.local/share/applications/io.github.mmhfarooque.GuiSpeedTest.desktop
+# If you dropped it somewhere else (e.g. ~/Applications/), rm it from there.
+```
+
+**Flatpak:**
+```sh
+flatpak uninstall io.github.mmhfarooque.GuiSpeedTest
+```
+
+**Snap:**
+```sh
+sudo snap remove gui-speedtest
+```
+
+**PyPI (pip):**
+```sh
+pip uninstall gui-speedtest
+# If you installed with --user:  pip uninstall --user gui-speedtest
+```
+
+### Clean up user data
+
+The app only writes to one place by default:
+
+```sh
+rm -rf ~/.cache/gui-speedtest/     # removes the rotating log file
+```
+
+There's no config directory, no keyring entries, no crontabs, no systemd units — uninstall is complete once the package is gone and the cache dir is cleared.
+
+### Reinstall (after updates or system upgrades)
+
+The repo ships `reinstall.sh` which does a clean uninstall-then-install in one step:
+
+```sh
+cd gui-speedtest && bash reinstall.sh
+```
+
+Or one-line equivalent (downloads the script fresh each time):
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/mmhfarooque/gui-speedtest/main/install.sh | bash -s -- --uninstall && \
+  curl -fsSL https://raw.githubusercontent.com/mmhfarooque/gui-speedtest/main/install.sh | bash
+```
+
+---
+
 ## Quick start
 
 Launch the GUI:
