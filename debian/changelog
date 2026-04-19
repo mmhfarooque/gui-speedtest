@@ -1,3 +1,11 @@
+gui-speedtest (1.6.10-1) unstable; urgency=medium
+
+  * AppImage: look up the latest python3.12.x release tag at
+    niess/python-appimage via the GitHub API rather than hard-coding
+    python3.12.7 (which doesn't exist as a release).
+
+ -- Mahmud Farooque <farooque7@gmail.com>  Sun, 19 Apr 2026 17:50:00 +0600
+
 gui-speedtest (1.6.9-1) unstable; urgency=medium
 
   * AppImage fix: the `python-appimage build local` command doesn't

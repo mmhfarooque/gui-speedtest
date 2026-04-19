@@ -43,14 +43,23 @@ WHEEL=$(ls -t "$DIST_DIR"/gui_speedtest-*.whl | head -1)
 echo "==> Starter AppImage: downloading prebuilt CPython 3.12 (manylinux2014)"
 cd "$BUILD_DIR"
 # Prebuilt standalone CPython AppImages are published by niess/python-appimage
-# for every patch release. We download one and extract its contents as the
-# base of our AppDir. This is simpler and more reliable than invoking the
-# python-appimage CLI (which has a moving-target subcommand surface).
-PY_TAG="python3.12.7-cp312-cp312-manylinux2014_x86_64"
-PY_URL="https://github.com/niess/python-appimage/releases/download/python3.12.7/${PY_TAG}.AppImage"
-curl -fL -o "./${PY_TAG}.AppImage" "$PY_URL"
-chmod +x "./${PY_TAG}.AppImage"
-STARTER="./${PY_TAG}.AppImage"
+# per patch release (tags like python3.12.0, python3.12.3, etc.). We query
+# the GitHub API for the newest 3.12 tag rather than hard-coding a patch
+# version that may not exist — previous attempt used python3.12.7 which
+# 404'd because niess didn't publish that specific patch.
+echo "    Looking up latest python3.12.x release tag..."
+PY_TAG=$(curl -fsSL https://api.github.com/repos/niess/python-appimage/releases?per_page=100 \
+    | python3 -c "import sys,json; tags=[r['tag_name'] for r in json.load(sys.stdin) if r['tag_name'].startswith('python3.12.')]; print(tags[0] if tags else '')")
+if [ -z "$PY_TAG" ]; then
+    echo "ERROR: no python3.12.x release tag found at niess/python-appimage" >&2
+    exit 1
+fi
+echo "    Found: $PY_TAG"
+PY_FILE="${PY_TAG}-cp312-cp312-manylinux2014_x86_64.AppImage"
+PY_URL="https://github.com/niess/python-appimage/releases/download/${PY_TAG}/${PY_FILE}"
+curl -fL -o "./${PY_FILE}" "$PY_URL"
+chmod +x "./${PY_FILE}"
+STARTER="./${PY_FILE}"
 
 echo "==> Extracting $STARTER to AppDir"
 "$STARTER" --appimage-extract >/dev/null
