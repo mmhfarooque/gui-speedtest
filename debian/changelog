@@ -1,3 +1,17 @@
+gui-speedtest (1.5.1-1) unstable; urgency=medium
+
+  * GUI: "Enable Ookla" action row. Shown automatically inside the
+    Connection group whenever Ookla is in the registry but not yet
+    installed. Click the Install button -> polkit password prompt ->
+    gui-speedtest-install-ookla runs in the background -> backend
+    picker refreshes with Ookla enabled. No terminal required.
+  * On auth-cancelled or error, the status line surfaces the outcome
+    and the Install button re-enables for another try. Installer
+    output is tailed into the log viewer so diagnostics stay in-app.
+  * debian Depends gains policykit-1 so pkexec is guaranteed present.
+
+ -- Mahmud Farooque <farooque7@gmail.com>  Sun, 19 Apr 2026 15:00:00 +0600
+
 gui-speedtest (1.5.0-1) unstable; urgency=medium
 
   * New command: gui-speedtest-install-ookla. Shipped in the .deb at

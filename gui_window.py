@@ -44,7 +44,7 @@ def run_gui(
 
     gi.require_version("Gtk", "4.0")
     gi.require_version("Adw", "1")
-    from gi.repository import Adw, GLib, Gtk
+    from gi.repository import Adw, Gio, GLib, Gtk
 
     class _Sparkline(Gtk.DrawingArea):
         """Rolling line chart of recent speed samples.
@@ -214,6 +214,15 @@ def run_gui(
             self.loc_row = Adw.ActionRow(title="Location", subtitle="—")
             self.server_row = Adw.ActionRow(title="Server", subtitle="—")
             info_group.add(self.backend_row)
+            # "Enable Ookla" row — only shown when the Ookla backend is in
+            # REGISTRY but not in the available list (i.e. the official
+            # `speedtest` binary isn't on PATH). Lets users enable it with
+            # one click (polkit password prompt) instead of dropping to a
+            # terminal for `sudo gui-speedtest-install-ookla`.
+            self.info_group = info_group
+            self._ookla_row = self._make_enable_ookla_row()
+            if self._needs_ookla_enable():
+                info_group.add(self._ookla_row)
             info_group.add(self.ip_row)
             info_group.add(self.isp_row)
             info_group.add(self.loc_row)
@@ -357,6 +366,97 @@ def run_gui(
             self.loc_row.set_subtitle("—")
             self.server_row.set_subtitle("—")
             self.status.set_label(f"Backend: {self.backend.display_name}")
+
+        @staticmethod
+        def _needs_ookla_enable() -> bool:
+            """True when the Ookla backend is in REGISTRY but unavailable —
+            i.e. the helper row is worth showing."""
+            from backends import REGISTRY
+            return "ookla" in REGISTRY and "ookla" not in available_backends()
+
+        def _make_enable_ookla_row(self) -> Adw.ActionRow:
+            row = Adw.ActionRow(
+                title="Enable Ookla",
+                subtitle="Install Ookla's Speedtest CLI to add it to the backend list",
+            )
+            btn = Gtk.Button(label="Install", css_classes=["suggested-action"],
+                             valign=Gtk.Align.CENTER)
+            btn.connect("clicked", self._on_install_ookla)
+            row.add_suffix(btn)
+            row.set_activatable_widget(btn)
+            self._ookla_install_btn = btn
+            return row
+
+        def _on_install_ookla(self, btn: Gtk.Button) -> None:
+            """Kick off `pkexec gui-speedtest-install-ookla` in the background.
+            Polkit shows a graphical password prompt; our GUI stays responsive.
+            On success we refresh the backend picker; on failure we surface
+            the exit code in the status line."""
+            logger.info("Ookla install: launching pkexec helper")
+            btn.set_sensitive(False)
+            btn.set_label("Installing…")
+            self.status.set_label("Installing Ookla… (auth prompt)")
+            try:
+                proc = Gio.Subprocess.new(
+                    ["pkexec", "/usr/bin/gui-speedtest-install-ookla"],
+                    Gio.SubprocessFlags.STDOUT_PIPE | Gio.SubprocessFlags.STDERR_MERGE,
+                )
+            except GLib.Error as e:
+                logger.error("Ookla install: failed to spawn pkexec: %s", e)
+                self.status.set_label(f"Install failed to start: {e}")
+                btn.set_sensitive(True)
+                btn.set_label("Install")
+                return
+            proc.communicate_utf8_async(None, None, self._on_ookla_install_done, btn)
+
+        def _on_ookla_install_done(self, proc: Gio.Subprocess, result, btn: Gtk.Button) -> None:
+            try:
+                _ok, stdout, _stderr = proc.communicate_utf8_finish(result)
+            except GLib.Error as e:
+                logger.error("Ookla install: communicate failed: %s", e)
+                self.status.set_label(f"Install errored: {e}")
+                btn.set_sensitive(True)
+                btn.set_label("Install")
+                return
+            rc = proc.get_exit_status()
+            logger.info("Ookla install: exit=%s", rc)
+            # Trim the installer's stdout to the last few lines for the log.
+            for line in (stdout or "").splitlines()[-8:]:
+                logger.info("ookla-install: %s", line)
+            if rc == 0 and "ookla" in available_backends():
+                self.status.set_label("Ookla installed — refreshing backends")
+                self._refresh_backend_list()
+            else:
+                hint = "cancelled" if rc == 126 else f"exit {rc}"
+                self.status.set_label(f"Ookla install {hint} — see Log for details")
+                btn.set_sensitive(True)
+                btn.set_label("Install")
+
+        def _refresh_backend_list(self) -> None:
+            """Re-enumerate available backends and rebuild the picker. Called
+            after the Ookla installer succeeds so the new backend appears
+            without a restart."""
+            previous_name = self.backend.name
+            new_backends = available_backends()
+            logger.info("Refreshing backend list: %s", new_backends)
+            self.backends = new_backends
+            labels = Gtk.StringList()
+            for name in new_backends:
+                labels.append(display_name_for(name))
+            # Block the change handler so swapping the model doesn't fire
+            # _on_backend_changed (which would try to rebuild this all over).
+            self.backend_row.handler_block_by_func(self._on_backend_changed)
+            self.backend_row.set_model(labels)
+            target = previous_name if previous_name in new_backends else new_backends[0]
+            self.backend_row.set_selected(new_backends.index(target))
+            self.backend_row.handler_unblock_by_func(self._on_backend_changed)
+            # Remove the Enable-Ookla row if it's no longer needed.
+            if not self._needs_ookla_enable() and self._ookla_row is not None:
+                try:
+                    self.info_group.remove(self._ookla_row)
+                except (ValueError, AttributeError):
+                    pass
+                self._ookla_row = None
 
         def _on_close(self, _window) -> bool:
             # Ensure any running subprocess (Ookla) or socket doesn't outlive
