@@ -42,24 +42,20 @@ WHEEL=$(ls -t "$DIST_DIR"/gui_speedtest-*.whl | head -1)
 
 echo "==> Starter AppImage: downloading prebuilt CPython 3.12 (manylinux2014)"
 cd "$BUILD_DIR"
-# Prebuilt standalone CPython AppImages are published by niess/python-appimage
-# per patch release (tags like python3.12.0, python3.12.3, etc.). We query
-# the GitHub API for the newest 3.12 tag rather than hard-coding a patch
-# version that may not exist — previous attempt used python3.12.7 which
-# 404'd because niess didn't publish that specific patch.
-echo "    Looking up latest python3.12.x release tag..."
-PY_TAG=$(curl -fsSL https://api.github.com/repos/niess/python-appimage/releases?per_page=100 \
-    | python3 -c "import sys,json; tags=[r['tag_name'] for r in json.load(sys.stdin) if r['tag_name'].startswith('python3.12.')]; print(tags[0] if tags else '')")
-if [ -z "$PY_TAG" ]; then
-    echo "ERROR: no python3.12.x release tag found at niess/python-appimage" >&2
-    exit 1
-fi
-echo "    Found: $PY_TAG"
-PY_FILE="${PY_TAG}-cp312-cp312-manylinux2014_x86_64.AppImage"
-PY_URL="https://github.com/niess/python-appimage/releases/download/${PY_TAG}/${PY_FILE}"
-curl -fL -o "./${PY_FILE}" "$PY_URL"
-chmod +x "./${PY_FILE}"
-STARTER="./${PY_FILE}"
+# Use python-appimage's `install` subcommand — it knows how to resolve
+# "latest python3.12" against niess/python-appimage's release list
+# regardless of pagination (earlier GitHub API approach returned no
+# matches because 3.13+ releases push 3.12 off the first 100 entries).
+python3 -m python_appimage install --help >/dev/null 2>&1 || {
+  echo "ERROR: python-appimage not installed. Run: pip install python-appimage" >&2
+  exit 1
+}
+INSTALL_DIR="$BUILD_DIR/python-install"
+mkdir -p "$INSTALL_DIR"
+python3 -m python_appimage install python3.12 "$INSTALL_DIR"
+STARTER=$(ls -t "$INSTALL_DIR"/*.AppImage 2>/dev/null | head -1)
+[ -n "$STARTER" ] || { echo "ERROR: python-appimage install did not produce an AppImage" >&2; exit 1; }
+echo "    Using: $STARTER"
 
 echo "==> Extracting $STARTER to AppDir"
 "$STARTER" --appimage-extract >/dev/null

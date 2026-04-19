@@ -1,3 +1,11 @@
+gui-speedtest (1.6.11-1) unstable; urgency=medium
+
+  * AppImage (attempt 4): use `python-appimage install python3.12 DIR`
+    idiomatic CLI subcommand. Previous direct-curl attempts 404'd or
+    paginated-off the niess/python-appimage release list.
+
+ -- Mahmud Farooque <farooque7@gmail.com>  Sun, 19 Apr 2026 18:00:00 +0600
+
 gui-speedtest (1.6.10-1) unstable; urgency=medium
 
   * AppImage: look up the latest python3.12.x release tag at
