@@ -76,6 +76,11 @@ jobs:
           chmod +x linuxdeploy linuxdeploy-plugin-gtk
           sudo mv linuxdeploy linuxdeploy-plugin-gtk /usr/local/bin/
       - name: Build
+        # GH_TOKEN lets the script use `gh api --paginate` to find the
+        # latest python3.12.x release tag at niess/python-appimage
+        # (anonymous API calls hit the 60/hr rate limit).
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: ./scripts/build-appimage.sh
       - uses: actions/upload-artifact@v7
         with:

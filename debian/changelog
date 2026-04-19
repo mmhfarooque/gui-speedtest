@@ -1,3 +1,13 @@
+gui-speedtest (1.6.12-1) unstable; urgency=medium
+
+  * AppImage (attempt 5): `python-appimage install` only installs tool
+    binaries (appimagetool/patchelf), not Python interpreters. Switched
+    to `gh api --paginate` to enumerate ALL niess/python-appimage release
+    pages, filter for python3.12.x tags, pick the newest. Expose
+    GH_TOKEN in the workflow step so the API calls authenticate.
+
+ -- Mahmud Farooque <farooque7@gmail.com>  Sun, 19 Apr 2026 18:15:00 +0600
+
 gui-speedtest (1.6.11-1) unstable; urgency=medium
 
   * AppImage (attempt 4): use `python-appimage install python3.12 DIR`
