@@ -43,6 +43,11 @@
   </keywords>
   <content_rating type="oars-1.1"/>
   <releases>
+    <release version="1.6.1" date="2026-04-19">
+      <description>
+        <p>Packaging-only release — first build to include AppImage, Snap, Flatpak, and RPM alongside the existing .deb, wheel, and sdist. Same code as 1.6.0.</p>
+      </description>
+    </release>
     <release version="1.6.0" date="2026-04-19">
       <description>
         <p>Ookla backend: live-progress rewrite. Sparklines, ping bars, and speed numbers now animate in real time during an Ookla run instead of sitting silent until the end. Run Again now triggers a fresh speedtest (previously re-used the cached result). Error messages from backend failures wrap inside the card instead of pushing the window wider. Ookla install helper now forces IPv4 and adds hard timeouts so it can't hang on broken IPv6 transit.</p>

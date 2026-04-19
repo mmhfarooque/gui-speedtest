@@ -1,5 +1,5 @@
 Name:           gui-speedtest
-Version:        1.6.0
+Version:        1.6.1
 Release:        1%{?dist}
 Summary:        Multi-backend internet speed test with a GTK4 + libadwaita UI
 
@@ -81,6 +81,9 @@ appstream-util validate-relax --nonet \
 %{_datadir}/metainfo/io.github.mmhfarooque.GuiSpeedTest.metainfo.xml
 
 %changelog
+* Sun Apr 19 2026 Mahmud Farooque <farooque7@gmail.com> - 1.6.1-1
+- Packaging-only bump. Same code as 1.6.0. First release to include .rpm,
+  AppImage, Snap, and Flatpak alongside the existing .deb.
 * Sun Apr 19 2026 Mahmud Farooque <farooque7@gmail.com> - 1.6.0-1
 - Initial RPM packaging.
 - Ookla backend live-progress rewrite (jsonl streaming).
