@@ -219,12 +219,20 @@ def run_gui(
             self.loc_row = Adw.ActionRow(title="Location", subtitle="—")
             self.server_row = Adw.ActionRow(title="Server", subtitle="—")
             info_group.add(self.backend_row)
+            # LibreSpeed server sub-picker — visible only when LibreSpeed
+            # is the selected backend. Populated from backends.librespeed's
+            # KNOWN_SERVERS list so users don't need to hunt down a URL or
+            # set LIBRESPEED_URL manually. Selection sets the env var for
+            # the upcoming run (see _on_librespeed_server_changed).
+            self._librespeed_row = self._make_librespeed_server_row()
+            self.info_group = info_group
+            if self.backend.name == "librespeed":
+                info_group.add(self._librespeed_row)
             # "Enable Ookla" row — only shown when the Ookla backend is in
             # REGISTRY but not in the available list (i.e. the official
             # `speedtest` binary isn't on PATH). Lets users enable it with
             # one click (polkit password prompt) instead of dropping to a
             # terminal for `sudo gui-speedtest-install-ookla`.
-            self.info_group = info_group
             self._ookla_row = self._make_enable_ookla_row()
             if self._needs_ookla_enable():
                 info_group.add(self._ookla_row)
@@ -407,7 +415,80 @@ def run_gui(
             self.isp_row.set_subtitle("—")
             self.loc_row.set_subtitle("—")
             self.server_row.set_subtitle("—")
+            # LibreSpeed sub-picker visibility follows backend selection.
+            self._sync_librespeed_row_visibility()
             self.status.set_label(f"Backend: {self.backend.display_name}")
+
+        def _sync_librespeed_row_visibility(self) -> None:
+            """Add or remove the LibreSpeed server sub-picker based on whether
+            LibreSpeed is the active backend. Idempotent — safe to call
+            whenever the backend selection changes."""
+            if self._librespeed_row is None:
+                return
+            active = self.backend.name == "librespeed"
+            parent = self._librespeed_row.get_parent()
+            if active and parent is None:
+                # Insert right after the backend_row so the sub-picker lives
+                # visually with the backend selection.
+                self.info_group.add(self._librespeed_row)
+            elif not active and parent is not None:
+                try:
+                    self.info_group.remove(self._librespeed_row)
+                except (ValueError, AttributeError):
+                    pass
+
+        def _make_librespeed_server_row(self) -> Adw.ComboRow:
+            """Sub-picker ComboRow listing curated LibreSpeed servers plus any
+            custom URL from $LIBRESPEED_URL. Matches the pattern of the Backend
+            ComboRow above — selection fires notify::selected into the handler."""
+            from backends.librespeed import list_servers
+            self._librespeed_servers = list_servers()
+            labels = Gtk.StringList()
+            for s in self._librespeed_servers:
+                labels.append(s["name"])
+            row = Adw.ComboRow(
+                title="LibreSpeed Server",
+                subtitle="Pick an endpoint close to you",
+                model=labels,
+            )
+            # Default to the currently-active URL (via env var), otherwise
+            # entry 0. Keeps manual $LIBRESPEED_URL users on their choice.
+            active_url = os.environ.get("LIBRESPEED_URL", "").strip().rstrip("/")
+            default_idx = 0
+            for i, s in enumerate(self._librespeed_servers):
+                if s["url"].rstrip("/") == active_url:
+                    default_idx = i
+                    break
+            row.set_selected(default_idx)
+            # Seed the env var to the currently-selected server so that when
+            # the user immediately clicks Start, the backend picks it up.
+            os.environ["LIBRESPEED_URL"] = self._librespeed_servers[default_idx]["url"]
+            row.connect("notify::selected", self._on_librespeed_server_changed)
+            return row
+
+        def _on_librespeed_server_changed(
+            self, combo: Adw.ComboRow, _param
+        ) -> None:
+            if self.running:
+                return
+            idx = combo.get_selected()
+            if 0 <= idx < len(self._librespeed_servers):
+                url = self._librespeed_servers[idx]["url"]
+                os.environ["LIBRESPEED_URL"] = url
+                # Re-instantiate the backend so connection_info + future
+                # test_* calls target the new URL.
+                try:
+                    self.backend = get_backend("librespeed")
+                except BackendError as e:
+                    self.status.set_label(f"LibreSpeed: {e}")
+                    return
+                self.ip_row.set_subtitle("—")
+                self.isp_row.set_subtitle("—")
+                self.loc_row.set_subtitle("—")
+                self.server_row.set_subtitle("—")
+                self.status.set_label(
+                    f"LibreSpeed server: {self._librespeed_servers[idx]['name']}"
+                )
 
         @staticmethod
         def _needs_ookla_enable() -> bool:

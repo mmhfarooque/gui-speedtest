@@ -1,3 +1,28 @@
+gui-speedtest (1.7.0-1) unstable; urgency=medium
+
+  * LibreSpeed now works out of the box. The backend ships a curated
+    list of public LibreSpeed servers (LibreSpeed project official,
+    Clouvider London/NYC/Atlanta/LA, Hostkey Singapore) and the first
+    entry is used as the default. No more "set LIBRESPEED_URL env var
+    and restart" dance.
+  * GUI: new "LibreSpeed Server" sub-picker ComboRow appears under the
+    Backend row when LibreSpeed is selected. Users pick an endpoint
+    close to them from the dropdown; selection takes effect immediately
+    without restart.
+  * Custom self-hosted servers still work — setting $LIBRESPEED_URL
+    appends it to the picker as a "Custom (URL)" entry, and it stays
+    selected if it was the active one on launch.
+  * CLI: new --librespeed-list-servers flag dumps the built-in server
+    list so terminal users can choose one to pass via --librespeed-url.
+  * Backend API: get_backend() signature unchanged; GUI sets the env
+    var before instantiation (simpler than threading kwargs through the
+    generic factory).
+  * Addresses a correctness issue with the v1.6.x blog announcement,
+    which claimed four backends available while LibreSpeed was in fact
+    hidden behind an unset env var on most installs.
+
+ -- Mahmud Farooque <farooque7@gmail.com>  Sun, 19 Apr 2026 21:30:00 +0600
+
 gui-speedtest (1.6.19-1) unstable; urgency=medium
 
   * install.sh --uninstall: also remove Ookla Speedtest CLI by default

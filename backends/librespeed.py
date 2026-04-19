@@ -48,6 +48,72 @@ UP_SIZES = [
     (5_000_000, "5 MB"),
 ]
 
+# Curated list of public LibreSpeed endpoints shipped with the app so
+# first-time users get a working picker without hunting down a server URL.
+# All entries must point at the ROOT of a LibreSpeed deployment — the app
+# appends /backend/garbage.php, /backend/empty.php, /backend/getIP.php to
+# this base. Sponsor + location are shown in the dropdown label so users
+# can pick one geographically close to them.
+#
+# Order matters: entry 0 is the default selection when the user hasn't
+# configured anything. Update this list when servers rotate (check the
+# LibreSpeed community list at https://librespeed.org/servers/ and
+# https://github.com/librespeed/speedtest/wiki for current endpoints).
+KNOWN_SERVERS: list[dict[str, str]] = [
+    {
+        "name": "LibreSpeed (Frankfurt, DE)",
+        "url": "https://librespeed.de",
+        "sponsor": "LibreSpeed project",
+    },
+    {
+        "name": "Clouvider (London, UK)",
+        "url": "https://london.speedtest.clouvider.net",
+        "sponsor": "Clouvider",
+    },
+    {
+        "name": "Clouvider (New York, US)",
+        "url": "https://nyc.speedtest.clouvider.net",
+        "sponsor": "Clouvider",
+    },
+    {
+        "name": "Clouvider (Atlanta, US)",
+        "url": "https://atl.speedtest.clouvider.net",
+        "sponsor": "Clouvider",
+    },
+    {
+        "name": "Clouvider (Los Angeles, US)",
+        "url": "https://la.speedtest.clouvider.net",
+        "sponsor": "Clouvider",
+    },
+    {
+        "name": "Hostkey (Singapore)",
+        "url": "https://speedtest.sgp.hostkey.com",
+        "sponsor": "Hostkey",
+    },
+]
+
+
+def list_servers() -> list[dict[str, str]]:
+    """Return the public server list plus any custom URL from LIBRESPEED_URL.
+
+    The env-var custom entry is appended at the end (or replaces a match if
+    the user set the same URL as a known one). Keeps the dropdown useful
+    for both out-of-the-box users and self-hosters.
+    """
+    out = list(KNOWN_SERVERS)
+    raw = os.environ.get(ENV_VAR, "").strip()
+    if raw:
+        validated = _validate_url(raw)
+        if validated and not any(s["url"] == validated for s in out):
+            out.append(
+                {
+                    "name": f"Custom ({validated})",
+                    "url": validated,
+                    "sponsor": "user-configured",
+                }
+            )
+    return out
+
 
 def _validate_url(raw: str) -> str | None:
     """Return a normalised URL or None if rejected.
@@ -98,10 +164,28 @@ def _validate_url(raw: str) -> str | None:
 
 
 def _server_url() -> str | None:
+    """Resolve the LibreSpeed server URL, preferring env var > baked-in default.
+
+    Order of precedence:
+      1. $LIBRESPEED_URL if set AND valid (custom / self-hosted).
+      2. First entry of KNOWN_SERVERS (the shipped default).
+
+    Return None only if the env var is set but fails validation AND for
+    some reason KNOWN_SERVERS is empty — which would be a bug in our
+    shipped config, not a user error.
+    """
     raw = os.environ.get(ENV_VAR, "").strip()
-    if not raw:
-        return None
-    return _validate_url(raw)
+    if raw:
+        validated = _validate_url(raw)
+        if validated:
+            return validated
+        logger.warning(
+            "%s is set to %r but failed validation — falling back to default server",
+            ENV_VAR, raw,
+        )
+    if KNOWN_SERVERS:
+        return KNOWN_SERVERS[0]["url"]
+    return None
 
 
 class LibreSpeedBackend(SpeedTestBackend):
@@ -110,13 +194,24 @@ class LibreSpeedBackend(SpeedTestBackend):
 
     @classmethod
     def available(cls) -> bool:
+        # Always available — we ship a curated KNOWN_SERVERS list so users
+        # don't have to hunt down a LibreSpeed endpoint before first use.
+        # A custom URL via $LIBRESPEED_URL takes precedence.
         return _server_url() is not None
 
-    def __init__(self) -> None:
-        self.base = _server_url()
+    def __init__(self, server_url: str | None = None) -> None:
+        """Instantiate with an optional explicit server URL.
+
+        The GUI passes the user's pick from the server dropdown via this
+        parameter; the CLI / default path resolves via _server_url() which
+        honours LIBRESPEED_URL env var first, then falls back to the first
+        KNOWN_SERVERS entry.
+        """
+        self.base = server_url or _server_url()
         if not self.base:
             raise BackendError(
-                f"{ENV_VAR} is not set or invalid (expected http:// or https:// URL)"
+                f"No LibreSpeed server configured (KNOWN_SERVERS empty and "
+                f"{ENV_VAR} unset) — this should not happen in a shipped release."
             )
 
     def _url(self, path: str) -> str:

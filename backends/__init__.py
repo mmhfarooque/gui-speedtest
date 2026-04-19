@@ -54,7 +54,12 @@ def available_backends() -> list[str]:
 
 
 def get_backend(name: str) -> SpeedTestBackend:
-    """Instantiate a backend by name. Raises KeyError if unknown."""
+    """Instantiate a backend by name. Raises KeyError if unknown.
+
+    For LibreSpeed's per-run server selection the GUI sets
+    os.environ['LIBRESPEED_URL'] before calling this — avoids threading
+    a server_url kwarg through the generic factory just for one backend.
+    """
     return _class_for(name)()
 
 

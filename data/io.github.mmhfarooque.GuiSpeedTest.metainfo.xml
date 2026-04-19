@@ -43,6 +43,11 @@
   </keywords>
   <content_rating type="oars-1.1"/>
   <releases>
+    <release version="1.7.0" date="2026-04-19">
+      <description>
+        <p>LibreSpeed now works out of the box — ships a curated list of public servers and a GUI picker to switch between them. Custom self-hosted URLs still supported.</p>
+      </description>
+    </release>
     <release version="1.6.19" date="2026-04-19">
       <description>
         <p>Uninstall now also removes the Ookla Speedtest CLI by default (with --keep-ookla opt-out). README "What's new" header refreshed to cover the 1.6 series.</p>

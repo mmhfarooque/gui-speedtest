@@ -20,7 +20,7 @@ from backends.base import BackendError, format_speed
 
 APP_NAME = "GUI Speed Test for Linux"
 APP_ID = "io.github.mmhfarooque.GuiSpeedTest"
-APP_VERSION = "1.6.19"
+APP_VERSION = "1.7.0"
 DEFAULT_BACKEND = "cloudflare"
 LATENCY_SAMPLES = 10
 
@@ -88,8 +88,8 @@ _BACKEND_HINTS: dict[str, str] = {
         "(apt) or websocket-client (pip)"
     ),
     "librespeed": (
-        "LibreSpeed backend not available — set LIBRESPEED_URL to your "
-        "LibreSpeed server URL (e.g. http://localhost:8080/)"
+        "LibreSpeed backend misconfigured — KNOWN_SERVERS empty and no "
+        "$LIBRESPEED_URL set. This should not happen in a shipped release."
     ),
 }
 
@@ -264,7 +264,14 @@ def main() -> None:
     parser.add_argument(
         "--librespeed-url",
         metavar="URL",
-        help="LibreSpeed server URL (sets LIBRESPEED_URL env var for this run)",
+        help="LibreSpeed server URL (sets LIBRESPEED_URL env var for this run). "
+             "If omitted, the app uses its first built-in server. "
+             "See --librespeed-list-servers.",
+    )
+    parser.add_argument(
+        "--librespeed-list-servers",
+        action="store_true",
+        help="List the built-in LibreSpeed servers and exit.",
     )
     parser.add_argument(
         "-v",
@@ -280,6 +287,12 @@ def main() -> None:
 
     if args.librespeed_url:
         os.environ["LIBRESPEED_URL"] = args.librespeed_url
+
+    if args.librespeed_list_servers:
+        from backends.librespeed import list_servers
+        for s in list_servers():
+            print(f"{s['name']:40s}  {s['url']}")
+        return
 
     if args.list_backends:
         for name in available_backends():
