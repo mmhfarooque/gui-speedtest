@@ -44,7 +44,10 @@ info() { echo -e "  ${BLUE}[..]${NC} $1"; }
 
 FORCE_FORMAT=""
 UNINSTALL=0
-VERSION="latest"
+# Don't use the name VERSION here — `. /etc/os-release` below sets its own
+# VERSION variable ("26.04 (Resolute Raccoon)" on Ubuntu 26.04) and would
+# clobber ours. Rename to REQUESTED_TAG.
+REQUESTED_TAG="latest"
 
 while [ $# -gt 0 ]; do
     case "$1" in
@@ -52,7 +55,7 @@ while [ $# -gt 0 ]; do
         --flatpak)  FORCE_FORMAT="flatpak"; shift ;;
         --snap)     FORCE_FORMAT="snap"; shift ;;
         --uninstall) UNINSTALL=1; shift ;;
-        --version)  VERSION="$2"; shift 2 ;;
+        --version)  REQUESTED_TAG="$2"; shift 2 ;;
         -h|--help)
             sed -n '2,30p' "$0" | sed 's/^# \?//'
             exit 0
@@ -140,13 +143,13 @@ fi
 # ----------------------------------------------------------------------------
 # Resolve the release tag + download URL
 # ----------------------------------------------------------------------------
-if [ "$VERSION" = "latest" ]; then
+if [ "$REQUESTED_TAG" = "latest" ]; then
     info "Looking up latest release tag..."
     TAG=$(curl -fsSL "https://api.github.com/repos/${REPO}/releases/latest" \
-          | grep -E '"tag_name"' | head -1 | sed -E 's/.*"([^"]+)".*/\1/')
+          | grep -E '"tag_name"' | head -1 | sed -E 's/.*"tag_name":[[:space:]]*"([^"]+)".*/\1/')
     [ -n "$TAG" ] || { fail "Could not find a release tag. Check your network."; exit 1; }
 else
-    TAG="$VERSION"
+    TAG="$REQUESTED_TAG"
 fi
 VER="${TAG#v}"
 ok "Installing $TAG"

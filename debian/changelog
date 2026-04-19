@@ -1,3 +1,15 @@
+gui-speedtest (1.6.18-1) unstable; urgency=medium
+
+  * install.sh critical fix: `. /etc/os-release` writes its own VERSION
+    variable ("26.04 (Resolute Raccoon)" on Ubuntu 26.04) which clobbered
+    the installer's VERSION="latest" sentinel. TAG resolution then tried
+    to download gui-speedtest_26.04 (Resolute Raccoon)-1_all.deb and
+    curl rejected the spaces. Renamed the installer's local variable to
+    REQUESTED_TAG to avoid the clash. tag_name extraction regex also
+    tightened so it only matches the literal tag_name key.
+
+ -- Mahmud Farooque <farooque7@gmail.com>  Sun, 19 Apr 2026 20:45:00 +0600
+
 gui-speedtest (1.6.17-1) unstable; urgency=medium
 
   * README: add a detailed Uninstall section covering the one-command
