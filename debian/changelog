@@ -1,3 +1,12 @@
+gui-speedtest (1.6.7-1) unstable; urgency=medium
+
+  * RPM workflow fix: swap `git archive` for `tar --transform` in the
+    Fedora container job. The container's actions/checkout didn't expose
+    .git reliably — the previous attempt at v1.6.1 failed with "fatal:
+    not a git repository". tar packages the workspace directly.
+
+ -- Mahmud Farooque <farooque7@gmail.com>  Sun, 19 Apr 2026 17:10:00 +0600
+
 gui-speedtest (1.6.6-1) unstable; urgency=medium
 
   * Release workflow: add every build job to the release job's `needs:`

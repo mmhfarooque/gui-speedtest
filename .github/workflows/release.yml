@@ -148,11 +148,21 @@ jobs:
             git-core
       - name: Prepare source tarball
         run: |
+          # The Fedora job runs in a container where actions/checkout doesn't
+          # expose .git reliably (git archive errored with "not a git
+          # repository" in previous attempts). Use `tar --transform` to
+          # package the workspace directly with the gui-speedtest-VERSION/
+          # prefix that the spec's Source0 line expects.
           rpmdev-setuptree
           VERSION=${GITHUB_REF_NAME#v}
-          git config --global --add safe.directory "$GITHUB_WORKSPACE"
-          git archive --format=tar.gz --prefix=gui-speedtest-${VERSION}/ \
-            -o ~/rpmbuild/SOURCES/gui-speedtest-${VERSION}.tar.gz HEAD
+          tar czf ~/rpmbuild/SOURCES/gui-speedtest-${VERSION}.tar.gz \
+            --transform "s|^\.|gui-speedtest-${VERSION}|" \
+            --exclude='./.git' --exclude='./__pycache__' \
+            --exclude='./.pybuild' --exclude='*.egg-info' \
+            --exclude='./build' --exclude='./dist' \
+            --exclude='./debian/.debhelper' --exclude='./debian/gui-speedtest' \
+            --exclude='./debian/files' --exclude='./debian/debhelper-build-stamp' \
+            .
           cp packaging/rpm/gui-speedtest.spec ~/rpmbuild/SPECS/
       - name: Build
         run: rpmbuild -ba ~/rpmbuild/SPECS/gui-speedtest.spec
