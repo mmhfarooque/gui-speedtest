@@ -21,7 +21,9 @@
 #   --appimage     Force AppImage install regardless of distro
 #   --flatpak      Force Flatpak install (requires flatpak + flathub)
 #   --snap         Force Snap install (requires snapd)
-#   --uninstall    Remove whichever format is currently installed
+#   --uninstall    Remove gui-speedtest + Ookla CLI (if installed via our helper)
+#   --keep-ookla   When used with --uninstall, keep the Ookla Speedtest CLI
+#                  in place (for users who use it from other tools).
 #   --version VER  Install a specific tag (default: latest)
 # ============================================================================
 
@@ -44,6 +46,7 @@ info() { echo -e "  ${BLUE}[..]${NC} $1"; }
 
 FORCE_FORMAT=""
 UNINSTALL=0
+KEEP_OOKLA=0
 # Don't use the name VERSION here — `. /etc/os-release` below sets its own
 # VERSION variable ("26.04 (Resolute Raccoon)" on Ubuntu 26.04) and would
 # clobber ours. Rename to REQUESTED_TAG.
@@ -55,6 +58,7 @@ while [ $# -gt 0 ]; do
         --flatpak)  FORCE_FORMAT="flatpak"; shift ;;
         --snap)     FORCE_FORMAT="snap"; shift ;;
         --uninstall) UNINSTALL=1; shift ;;
+        --keep-ookla) KEEP_OOKLA=1; shift ;;
         --version)  REQUESTED_TAG="$2"; shift 2 ;;
         -h|--help)
             sed -n '2,30p' "$0" | sed 's/^# \?//'
@@ -119,6 +123,37 @@ if [ "$UNINSTALL" = "1" ]; then
           "$HOME/.local/share/applications/${APP_ID}.desktop" \
           "$HOME/Applications/GUI_Speed_Test_for_Linux-x86_64.AppImage" 2>/dev/null && \
         ok "Removed AppImage" || true
+    # User data — the only place the app writes to.
+    rm -rf "$HOME/.cache/gui-speedtest" 2>/dev/null && ok "Removed ~/.cache/gui-speedtest/" || true
+
+    # Ookla Speedtest CLI — we installed it for you (via Enable Ookla button
+    # or sudo gui-speedtest-install-ookla), so we clean it up by default.
+    # Pass --keep-ookla if you use Ookla for other tools.
+    if [ "$KEEP_OOKLA" = "1" ]; then
+        info "Keeping Ookla Speedtest CLI (--keep-ookla)"
+    else
+        info "Removing Ookla Speedtest CLI + its apt repo..."
+        # apt-installed package (Ookla's own repo at packagecloud.io)
+        if dpkg -l speedtest >/dev/null 2>&1; then
+            sudo apt-get purge -y speedtest 2>&1 | tail -2
+            ok "Removed Ookla apt package"
+        fi
+        # Ookla's apt repo + signing key (added by install.deb.sh)
+        sudo rm -f /etc/apt/sources.list.d/ookla_speedtest-cli.list \
+                   /etc/apt/sources.list.d/ookla_speedtest-cli.sources \
+                   /usr/share/keyrings/ookla_speedtest-cli-archive-keyring.gpg \
+                   /etc/apt/trusted.gpg.d/ookla_speedtest-cli.gpg 2>/dev/null && \
+            ok "Removed Ookla apt repo + keyring" || true
+        # Tarball fallback install (used when apt repo didn't have the codename)
+        sudo rm -f /usr/local/bin/speedtest 2>/dev/null && \
+            ok "Removed /usr/local/bin/speedtest" || true
+        # RPM-installed (Fedora, via Ookla's rpm repo or our install-ookla script)
+        if command -v dnf >/dev/null 2>&1 && rpm -q speedtest >/dev/null 2>&1; then
+            sudo dnf remove -y speedtest 2>&1 | tail -2
+            ok "Removed Ookla rpm package"
+        fi
+    fi
+
     ok "Uninstall complete."
     exit 0
 fi

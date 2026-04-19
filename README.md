@@ -10,14 +10,16 @@ Follows your system's light/dark theme. No browser, no tracking, no ads.
 
 ---
 
-## What's new in 1.6.0
+## What's new
 
-- **Ookla backend now shows live progress.** Sparklines and ping bars animate in real time during the run instead of sitting silent until the end.
-- **Run Again works on Ookla.** Fresh CLI invocation every click.
-- **Backend errors wrap inside the card.** Long error messages (M-Lab 401 with headers etc.) no longer push the window wider than your screen.
-- **Ookla installer can't hang.** Forces IPv4 + hard timeouts on curl + wget.
+- **One-command installer** (1.6.16+) — auto-detects your distro and installs the best format. No more "download the .deb then apt install" two-step.
+- **Ships in 7 formats** (1.6.15+) — `.deb`, `.rpm`, AppImage, Snap, Flatpak, PyPI wheel, source tarball. All with full backend parity (Cloudflare / Ookla / M-Lab / LibreSpeed).
+- **Ookla backend live progress** (1.6.0+) — sparklines and ping bars animate in real time during the run instead of sitting silent until the end.
+- **Run Again works on Ookla** (1.6.0+) — fresh CLI invocation every click.
+- **Backend errors wrap inside the card** (1.6.0+) — long error messages (M-Lab 401 with headers etc.) no longer push the window wider than your screen.
+- **Ookla installer can't hang** (1.6.0+) — forces IPv4 + hard timeouts on curl + wget.
 
-See [CHANGELOG / releases](https://github.com/mmhfarooque/gui-speedtest/releases) for earlier versions.
+See [CHANGELOG / releases](https://github.com/mmhfarooque/gui-speedtest/releases) for the full history.
 
 ---
 
@@ -135,10 +137,16 @@ No `.desktop` registration — launch from a terminal with `gui-speedtest --gui`
 
 ### One-command uninstall (any format)
 
-The same `install.sh` knows how to remove whichever format is installed — it tries every path quietly and reports what it found:
+The same `install.sh` knows how to remove whichever format is installed — it tries every path quietly and reports what it found. **It also removes the Ookla Speedtest CLI by default** (since we installed it for you via the in-app "Enable Ookla" button or the `gui-speedtest-install-ookla` helper) along with Ookla's apt repo + signing key.
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/mmhfarooque/gui-speedtest/main/install.sh | bash -s -- --uninstall
+```
+
+If you use Ookla from other tools and want to **keep the `speedtest` CLI installed**, add `--keep-ookla`:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/mmhfarooque/gui-speedtest/main/install.sh | bash -s -- --uninstall --keep-ookla
 ```
 
 Or if you still have the repo cloned:

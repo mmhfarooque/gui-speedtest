@@ -1,3 +1,15 @@
+gui-speedtest (1.6.19-1) unstable; urgency=medium
+
+  * install.sh --uninstall: also remove Ookla Speedtest CLI by default
+    (apt-installed speedtest pkg + Ookla's apt repo + keyring + tarball
+    at /usr/local/bin/speedtest). New --keep-ookla flag for users who
+    use Ookla from other tools. Also scrubs ~/.cache/gui-speedtest/.
+  * README: stale "What's new in 1.6.0" header updated to cover the 1.6
+    series (one-command installer, 7-format parity, Ookla live progress).
+    README Uninstall section now documents the Ookla-removal behaviour.
+
+ -- Mahmud Farooque <farooque7@gmail.com>  Sun, 19 Apr 2026 21:00:00 +0600
+
 gui-speedtest (1.6.18-1) unstable; urgency=medium
 
   * install.sh critical fix: `. /etc/os-release` writes its own VERSION
