@@ -43,6 +43,11 @@
   </keywords>
   <content_rating type="oars-1.1"/>
   <releases>
+    <release version="1.6.14" date="2026-04-19">
+      <description>
+        <p>AppImage build-script fix — custom AppRun now lives outside the AppDir so linuxdeploy can copy it in without a same-path collision.</p>
+      </description>
+    </release>
     <release version="1.6.13" date="2026-04-19">
       <description>
         <p>AppImage build-script fix — correct niess/python-appimage tag structure (one tag per minor version, asset lookup).</p>

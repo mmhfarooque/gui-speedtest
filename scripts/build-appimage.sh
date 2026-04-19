@@ -98,7 +98,12 @@ ln -sf "usr/share/icons/hicolor/scalable/apps/${APP_ID}.svg" "$APPDIR/${APP_ID}.
 ln -sf "${APP_ID}.svg" "$APPDIR/.DirIcon"
 
 echo "==> Writing AppRun that invokes gui-speedtest --gui"
-cat > "$APPDIR/AppRun" <<'APPRUN_EOF'
+# Write AppRun OUTSIDE the AppDir first. linuxdeploy's --custom-apprun
+# copies the file into $APPDIR/AppRun; if the source and destination
+# paths collide (i.e. the file was already $APPDIR/AppRun), the copy
+# fails with "No such file or directory".
+CUSTOM_APPRUN="$BUILD_DIR/AppRun"
+cat > "$CUSTOM_APPRUN" <<'APPRUN_EOF'
 #!/bin/bash
 HERE="$(dirname "$(readlink -f "$0")")"
 export PATH="$HERE/usr/bin:$HERE/opt/python3.12/bin:$PATH"
@@ -112,7 +117,7 @@ export GI_TYPELIB_PATH="$HERE/usr/lib/x86_64-linux-gnu/girepository-1.0:$HERE/us
 export XDG_DATA_DIRS="$HERE/usr/share:${XDG_DATA_DIRS:-/usr/local/share:/usr/share}"
 exec "$HERE/usr/bin/gui-speedtest" "$@"
 APPRUN_EOF
-chmod +x "$APPDIR/AppRun"
+chmod +x "$CUSTOM_APPRUN"
 
 echo "==> Layering GTK4 runtime via linuxdeploy-plugin-gtk"
 # DEPLOY_GTK_VERSION=4 → bundle GTK 4 (not 3) modules, loaders, settings.
@@ -123,7 +128,7 @@ export APPIMAGE_EXTRACT_AND_RUN=1
 linuxdeploy --appdir "$APPDIR" --plugin gtk \
     --desktop-file "$APPDIR/${APP_ID}.desktop" \
     --icon-file "$APPDIR/${APP_ID}.svg" \
-    --custom-apprun "$APPDIR/AppRun" \
+    --custom-apprun "$CUSTOM_APPRUN" \
     --output appimage
 
 echo "==> Moving result to dist/"
