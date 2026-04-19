@@ -43,6 +43,11 @@
   </keywords>
   <content_rating type="oars-1.1"/>
   <releases>
+    <release version="1.5.0" date="2026-04-19">
+      <description>
+        <p>New helper: sudo gui-speedtest-install-ookla installs Ookla's official CLI automatically, with distro detection for Ubuntu 26.04 (falls back to tarball when the apt repo doesn't yet support your release). Also: actionable hints in the log for every missing backend.</p>
+      </description>
+    </release>
     <release version="1.4.0" date="2026-04-19">
       <description>
         <p>OVH backend removed — it was geography-bound to Europe/North America and didn't give useful numbers for other regions. Four backends remain: Cloudflare (default), Ookla, M-Lab NDT7, LibreSpeed.</p>

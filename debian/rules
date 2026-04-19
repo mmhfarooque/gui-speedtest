@@ -16,3 +16,7 @@ override_dh_auto_install:
 		debian/gui-speedtest/usr/share/icons/hicolor/scalable/apps/io.github.mmhfarooque.GuiSpeedTest.svg
 	install -Dm644 data/io.github.mmhfarooque.GuiSpeedTest.metainfo.xml \
 		debian/gui-speedtest/usr/share/metainfo/io.github.mmhfarooque.GuiSpeedTest.metainfo.xml
+	# Helper to enable the Ookla backend — auto-detects whether the apt
+	# repo supports this distro, falls back to the standalone tarball.
+	install -Dm755 scripts/install-ookla.sh \
+		debian/gui-speedtest/usr/bin/gui-speedtest-install-ookla

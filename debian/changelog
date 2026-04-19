@@ -1,3 +1,19 @@
+gui-speedtest (1.5.0-1) unstable; urgency=medium
+
+  * New command: gui-speedtest-install-ookla. Shipped in the .deb at
+    /usr/bin/gui-speedtest-install-ookla. Installs Ookla's official
+    speedtest CLI with smart distro detection: tries Ookla's apt repo
+    first (users get auto-updates via apt upgrade on supported
+    distros — e.g. Ubuntu 24.04), falls back to their standalone
+    tarball on unsupported distros (e.g. Ubuntu 26.04 resolute, which
+    returned 404 from the Ookla apt repo after its release).
+  * Startup diagnostics: gui_speedtest now logs availability of every
+    backend on startup. Missing backends get an actionable hint in
+    the log explaining exactly how to enable them — visible via the
+    in-app Log viewer without any terminal commands.
+
+ -- Mahmud Farooque <farooque7@gmail.com>  Sun, 19 Apr 2026 14:30:00 +0600
+
 gui-speedtest (1.4.0-1) unstable; urgency=medium
 
   * Backend: drop OVH. The proof.ovh.net endpoints are only hosted in

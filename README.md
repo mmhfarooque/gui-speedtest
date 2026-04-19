@@ -32,11 +32,23 @@ pip install "gui-speedtest[all]"
 ### System dependencies for the GUI
 ```sh
 # Debian/Ubuntu
-sudo apt install python3-gi gir1.2-gtk-4.0 gir1.2-adw-1
+sudo apt install python3-gi python3-gi-cairo gir1.2-gtk-4.0 gir1.2-adw-1
 # Fedora
-sudo dnf install python3-gobject gtk4 libadwaita
+sudo dnf install python3-gobject python3-cairo gtk4 libadwaita
 # Arch
-sudo pacman -S python-gobject gtk4 libadwaita
+sudo pacman -S python-gobject python-cairo gtk4 libadwaita
+```
+
+### Enable optional backends
+The Cloudflare and M-Lab backends work out of the box with the `.deb`. Two more are available if you install their prerequisites:
+
+```sh
+# Ookla Speedtest CLI (auto-detects apt repo support, falls back to tarball)
+sudo gui-speedtest-install-ookla
+
+# LibreSpeed — point the app at any LibreSpeed server (your own or a public one)
+echo 'export LIBRESPEED_URL="https://your-librespeed-server/"' >> ~/.bashrc
+source ~/.bashrc
 ```
 
 ## Usage

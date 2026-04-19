@@ -20,7 +20,7 @@ from backends.base import BackendError, format_speed
 
 APP_NAME = "GUI Speed Test for Linux"
 APP_ID = "io.github.mmhfarooque.GuiSpeedTest"
-APP_VERSION = "1.4.0"
+APP_VERSION = "1.5.0"
 DEFAULT_BACKEND = "cloudflare"
 LATENCY_SAMPLES = 10
 
@@ -72,6 +72,42 @@ def _setup_logging(verbose: bool) -> None:
     except OSError as e:
         # Not fatal — just means we'll only have console output.
         root.warning("Could not open log file (%s); file logging disabled", e)
+
+
+# Hints emitted to the log so users who open the in-app log viewer can
+# see why a backend is missing and exactly what to do to enable it.
+# Keep this separate from the backend classes so the UI layer controls
+# the messaging without coupling to the registry module.
+_BACKEND_HINTS: dict[str, str] = {
+    "ookla": (
+        "Ookla backend not available — run 'sudo gui-speedtest-install-ookla' "
+        "to install Ookla's official CLI"
+    ),
+    "mlab": (
+        "M-Lab backend not available — install python3-websocket "
+        "(apt) or websocket-client (pip)"
+    ),
+    "librespeed": (
+        "LibreSpeed backend not available — set LIBRESPEED_URL to your "
+        "LibreSpeed server URL (e.g. http://localhost:8080/)"
+    ),
+}
+
+
+def _log_backend_availability() -> None:
+    """Log which backends are enabled and, for each missing one, how
+    the user can enable it. Lands in ~/.cache/gui-speedtest/gui-speedtest.log
+    so users who open the in-app Log viewer see actionable hints."""
+    log = logging.getLogger("gui_speedtest")
+    available = set(available_backends())
+    from backends import REGISTRY
+    for name in REGISTRY:
+        if name in available:
+            log.info("Backend %s: available", name)
+        elif name in _BACKEND_HINTS:
+            log.info("Backend %s: %s", name, _BACKEND_HINTS[name])
+        else:
+            log.info("Backend %s: unavailable", name)
 
 
 def _run_cli_latency(backend) -> str:
@@ -240,6 +276,7 @@ def main() -> None:
     args = parser.parse_args()
 
     _setup_logging(args.verbose)
+    _log_backend_availability()
 
     if args.librespeed_url:
         os.environ["LIBRESPEED_URL"] = args.librespeed_url
