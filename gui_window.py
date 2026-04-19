@@ -395,6 +395,11 @@ def run_gui(
             # so users can paste it anywhere without selecting by hand.
             copy_btn = Gtk.Button(label="Copy All", css_classes=["suggested-action"])
             log_header.pack_end(copy_btn)
+            # Clear button — truncates the log file so subsequent runs
+            # produce a clean trace. Useful when users want to reproduce a
+            # specific issue without a pile of irrelevant history.
+            clear_btn = Gtk.Button(label="Clear", css_classes=["destructive-action"])
+            log_header.pack_end(clear_btn)
             outer.append(log_header)
 
             scroll = Gtk.ScrolledWindow(vexpand=True, hexpand=True)
@@ -423,6 +428,30 @@ def run_gui(
                 GLib.timeout_add_seconds(2, lambda: (copy_btn.set_label("Copy All"), False)[1])
 
             copy_btn.connect("clicked", _on_copy)
+
+            def _on_clear(_b: Gtk.Button) -> None:
+                # Truncate the log file in place — the RotatingFileHandler
+                # that logged to it keeps writing to the same fd, so new
+                # log entries land in the empty file naturally. This also
+                # drops any rotated backups (log.1, log.2, ...) to match
+                # the user's expectation of a clean slate.
+                try:
+                    # Drop old rotated files first
+                    for sibling in log_path.parent.glob(log_path.name + ".*"):
+                        try:
+                            sibling.unlink()
+                        except OSError as e:
+                            logger.debug("clear log: couldn't remove %s: %s", sibling, e)
+                    with log_path.open("w", encoding="utf-8"):
+                        pass  # truncate to zero bytes
+                    logger.info("Log cleared by user")
+                    buf.set_text("(Log cleared.)")
+                    clear_btn.set_label("Cleared ✓")
+                    GLib.timeout_add_seconds(2, lambda: (clear_btn.set_label("Clear"), False)[1])
+                except OSError as e:
+                    buf.set_text(f"(Could not clear log: {e})")
+
+            clear_btn.connect("clicked", _on_clear)
 
             win.present()
             # Scroll to the tail so the most recent events are visible first.
@@ -459,22 +488,35 @@ def run_gui(
 
         def _cancel_test(self) -> None:
             """Mark the run as cancelled and tell the backend to abort.
-            For Ookla this kills the subprocess immediately; for HTTP-based
-            backends the current chunk finishes (or times out) before the
-            thread checks self.cancelled and exits."""
+
+            This runs on the GTK main thread (it's a click handler) so
+            every UI mutation here is synchronous — no idle_add. Previously
+            we queued the status label update, but it got drowned by a
+            backlog of pending progress callbacks emitted by the worker
+            thread during a slow download (40+ progress events x 3
+            idle_adds each). User clicked Cancel and saw "Download 10 MB:
+            0.64 Mbps" linger for many seconds instead of immediate
+            "Cancelling…" feedback.
+
+            dl_cb / ul_cb / lat_cb short-circuit on self.cancelled so even
+            already-queued idle_adds skip their UI updates on arrival.
+            """
             logger.info("User clicked Cancel (backend=%s)", self.backend.name)
             self.cancelled = True
+            self.status.set_label("Cancelling…")
+            self.progress.set_text("Cancelling…")
+            self.start_btn.set_sensitive(False)
             try:
                 self.backend.cancel()
             except OSError as e:
                 logger.debug("_cancel_test: backend.cancel() raised %s", e)
-            GLib.idle_add(self.status.set_label, "Cancelling…")
-            GLib.idle_add(self.start_btn.set_sensitive, False)
 
         def _finish_run(self, final_status: str) -> bool:
-            """Runs on the main thread after all prior idle_adds have drained —
-            this is what releases the `running` flag so there's no window where
-            the button is still disabled but self.running is already False."""
+            """Runs on the main thread at the end of the worker's test loop.
+            Scheduled at PRIORITY_HIGH so it preempts any backlog of queued
+            status/chart idle_adds — otherwise on a slow link the user
+            sees "Cancelling…" for seconds while the queue drains."""
+            logger.info("_finish_run: cancelled=%s status=%r", self.cancelled, final_status)
             if self.cancelled:
                 self.progress.set_text("Cancelled")
                 self.status.set_label("Cancelled")
@@ -529,10 +571,12 @@ def run_gui(
                     GLib.idle_add(self.server_row.set_subtitle, info.server)
             end_phase()
             if self.cancelled:
-                GLib.idle_add(self._finish_run, "Cancelled")
+                GLib.idle_add(self._finish_run, "Cancelled", priority=GLib.PRIORITY_HIGH)
                 return
 
             def lat_cb(event: str, data: dict) -> None:
+                if self.cancelled:
+                    return
                 if event == "latency_sample":
                     GLib.idle_add(
                         self.status.set_label,
@@ -565,10 +609,16 @@ def run_gui(
                     )
             end_phase()
             if self.cancelled:
-                GLib.idle_add(self._finish_run, "Cancelled")
+                GLib.idle_add(self._finish_run, "Cancelled", priority=GLib.PRIORITY_HIGH)
                 return
 
             def dl_cb(event: str, data: dict) -> None:
+                # Drop the callback entirely once the user cancelled —
+                # otherwise a backlog of already-in-flight progress events
+                # keeps overwriting the "Cancelling…" status with stale
+                # mid-chunk speed readings.
+                if self.cancelled:
+                    return
                 # Streaming progress (mid-chunk) and chunk completion both
                 # refresh the card so users see continuous motion during a
                 # slow download instead of a frozen reading for minutes.
@@ -592,10 +642,12 @@ def run_gui(
                 GLib.idle_add(self.dl_card["unit"].set_text, str(e))
             end_phase()
             if self.cancelled:
-                GLib.idle_add(self._finish_run, "Cancelled")
+                GLib.idle_add(self._finish_run, "Cancelled", priority=GLib.PRIORITY_HIGH)
                 return
 
             def ul_cb(event: str, data: dict) -> None:
+                if self.cancelled:
+                    return
                 if event in ("upload_chunk", "upload_chunk_progress"):
                     GLib.idle_add(
                         self.status.set_label,
@@ -619,7 +671,7 @@ def run_gui(
             final = f"Download: {dl_text} | Upload: {ul_text} | {lat_text}"
             # _finish_run flips self.running=False — scheduling via idle_add
             # guarantees it runs AFTER all the progress/label updates above.
-            GLib.idle_add(self._finish_run, final)
+            GLib.idle_add(self._finish_run, final, priority=GLib.PRIORITY_HIGH)
 
     class SpeedTestApp(Adw.Application):
         def __init__(self) -> None:

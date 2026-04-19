@@ -1,3 +1,27 @@
+gui-speedtest (1.3.2-1) unstable; urgency=medium
+
+  * Cancel UX: Cancel now produces instant UI feedback. v1.3.1's cancel
+    path worked functionally (the worker thread exited correctly after
+    socket shutdown) but the UI could stay on the old "Testing download…"
+    text for many seconds on slow links because 40+ queued progress
+    idle_adds were draining in front of the "Cancelling…" label update.
+  * Fix: _cancel_test now updates UI synchronously from the click handler
+    (we're on the main thread already) — status, progress text, button
+    sensitivity flip instantly.
+  * Fix: the download / upload / latency callbacks short-circuit on
+    self.cancelled so already-in-flight progress events from the worker
+    thread skip their UI updates on arrival. No more stale "0.6 Mbps"
+    overwriting "Cancelling…".
+  * Fix: _finish_run now dispatches at GLib.PRIORITY_HIGH so it preempts
+    any remaining progress backlog. Also logs its entry — an absence of
+    "_finish_run: cancelled=True" in the log now genuinely means it
+    didn't run, not that it ran without logging.
+  * Feature: "Clear" button in the log viewer (alongside Copy All).
+    Truncates the current log file and drops rotated backups so the
+    next run produces a clean trace.
+
+ -- Mahmud Farooque <farooque7@gmail.com>  Sun, 19 Apr 2026 12:30:00 +0600
+
 gui-speedtest (1.3.1-1) unstable; urgency=medium
 
   * GUI: fix sparklines / ping histogram not rendering. On Ubuntu 26.04
