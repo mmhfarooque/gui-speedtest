@@ -141,7 +141,7 @@ class MLabBackend(SpeedTestBackend):
 
         # M-Lab's locate API returns server info only — no client IP/ISP.
         # Enrich via ipify + ipwho.is so the GUI shows real client geography
-        # instead of "Unknown". Same pattern as OVH and Cloudflare fallback.
+        # instead of "Unknown". Same pattern as Cloudflare's fallback chain.
         ip, isp, city, region, country = "Unknown", "Unknown", "", "Unknown", ""
         try:
             ip = json.loads(safe_decode(http_get(IPIFY_URL, timeout=5))).get("ip", "Unknown")

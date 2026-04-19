@@ -12,7 +12,6 @@ Multiple backends behind one clean interface — run the test against whichever 
 | Ookla | | ✓ | ✓ | ✓ | Requires `speedtest` CLI from speedtest.net/apps/cli |
 | M-Lab NDT7 | | ✓ | ✓ | ✓ | Academic-backed, requires `websocket-client` |
 | LibreSpeed | | ✓ | ✓ | ✓ | Needs `--librespeed-url` or `LIBRESPEED_URL` |
-| OVH | | ✓ | — | ✓ | EU-based, download-only |
 
 ## Install
 

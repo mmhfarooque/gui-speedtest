@@ -26,7 +26,7 @@ Recommends: speedtest-cli,
             python3-websocket,
 Description: GUI + CLI internet speed test for Linux
  A native GTK4 + libadwaita speed test with multiple backends:
- Cloudflare (default), Ookla, M-Lab NDT, LibreSpeed, and OVH.
+ Cloudflare (default), Ookla, M-Lab NDT, and LibreSpeed.
  .
  The interface follows your system light/dark theme automatically
  and ships a non-decorative JSON mode for scripts.

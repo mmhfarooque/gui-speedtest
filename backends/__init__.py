@@ -20,7 +20,6 @@ REGISTRY: dict[str, str] = {
     "ookla": "backends.ookla:OoklaBackend",
     "mlab": "backends.mlab:MLabBackend",
     "librespeed": "backends.librespeed:LibreSpeedBackend",
-    "ovh": "backends.ovh:OvhBackend",
 }
 
 
