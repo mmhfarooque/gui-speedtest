@@ -43,6 +43,11 @@
   </keywords>
   <content_rating type="oars-1.1"/>
   <releases>
+    <release version="1.6.4" date="2026-04-19">
+      <description>
+        <p>Flatpak build-chain fix — revert runtime to GNOME 47 (gnome-48 CI image not yet published).</p>
+      </description>
+    </release>
     <release version="1.6.3" date="2026-04-19">
       <description>
         <p>Flatpak workflow fix — runtime bumped to GNOME 48 (47 was EOL). Same app code as 1.6.0.</p>

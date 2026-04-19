@@ -1,3 +1,12 @@
+gui-speedtest (1.6.4-1) unstable; urgency=medium
+
+  * Flatpak workflow fix: revert runtime to GNOME 47 — the gnome-48 tag
+    on bilelmoussaoui/flatpak-github-actions hasn't been published yet.
+    GNOME 47 runtime is past EOL but still buildable; the dead URL for
+    websocket-client that v1.6.3 removed was the actual blocker.
+
+ -- Mahmud Farooque <farooque7@gmail.com>  Sun, 19 Apr 2026 16:40:00 +0600
+
 gui-speedtest (1.6.3-1) unstable; urgency=medium
 
   * Flatpak workflow fix: bump runtime 47 -> 48 (GNOME 47 went EOL

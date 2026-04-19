@@ -118,7 +118,10 @@ jobs:
     # does NOT exist — previous tag attempted that image and got
     # "manifest unknown" from the registry.
     container:
-      image: bilelmoussaoui/flatpak-github-actions:gnome-48
+      # gnome-48 image isn't published on Docker Hub yet; gnome-47 still
+      # pulls and builds. The GNOME 47 runtime is past EOL (as of 2025-10-15)
+      # but that surfaces as a warning, not a build blocker.
+      image: bilelmoussaoui/flatpak-github-actions:gnome-47
       options: --privileged
     steps:
       - uses: actions/checkout@v6

@@ -1,7 +1,10 @@
 app-id: io.github.mmhfarooque.GuiSpeedTest
-# GNOME 48 runtime — 47 went EOL 2025-10-15. Bump when 48 does too.
+# GNOME 47 runtime — stays in sync with the CI container image. The
+# runtime is past EOL (2025-10-15) but still buildable. Bump to 48 when
+# bilelmoussaoui/flatpak-github-actions publishes a gnome-48 image, or
+# swap to a different CI action altogether.
 runtime: org.gnome.Platform
-runtime-version: '48'
+runtime-version: '47'
 sdk: org.gnome.Sdk
 command: gui-speedtest
 
