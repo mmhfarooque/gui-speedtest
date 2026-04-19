@@ -1,7 +1,7 @@
 name: gui-speedtest
 title: GUI Speed Test for Linux
 base: core24
-version: '1.6.12'
+version: '1.6.13'
 summary: Multi-backend internet speed test with a GTK4 + libadwaita UI
 description: |
   A fast, native GTK4 + libadwaita internet speed test for Linux. Multiple

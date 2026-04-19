@@ -1,3 +1,13 @@
+gui-speedtest (1.6.13-1) unstable; urgency=medium
+
+  * AppImage (attempt 6): niess/python-appimage uses one tag per minor
+    Python version (`python3.12`), not per patch. My regex `python3.12.N`
+    never matched. Query the release's assets for the actual filename
+    instead — it's `python3.12.12-cp312-cp312-manylinux2014_x86_64.AppImage`
+    under tag `python3.12`.
+
+ -- Mahmud Farooque <farooque7@gmail.com>  Sun, 19 Apr 2026 18:30:00 +0600
+
 gui-speedtest (1.6.12-1) unstable; urgency=medium
 
   * AppImage (attempt 5): `python-appimage install` only installs tool

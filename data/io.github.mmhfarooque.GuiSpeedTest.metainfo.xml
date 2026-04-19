@@ -43,6 +43,11 @@
   </keywords>
   <content_rating type="oars-1.1"/>
   <releases>
+    <release version="1.6.13" date="2026-04-19">
+      <description>
+        <p>AppImage build-script fix — correct niess/python-appimage tag structure (one tag per minor version, asset lookup).</p>
+      </description>
+    </release>
     <release version="1.6.12" date="2026-04-19">
       <description>
         <p>AppImage build-script fix — paginated GitHub API lookup of the latest python3.12.x CPython starter.</p>

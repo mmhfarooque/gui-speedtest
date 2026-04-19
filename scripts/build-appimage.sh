@@ -42,34 +42,30 @@ WHEEL=$(ls -t "$DIST_DIR"/gui_speedtest-*.whl | head -1)
 
 echo "==> Starter AppImage: downloading prebuilt CPython 3.12 (manylinux2014)"
 cd "$BUILD_DIR"
-# niess/python-appimage ships one GitHub Release per CPython patch version.
-# As of 2026-04 the latest releases are all 3.13.x, so a single-page API
-# query for python3.12.* tags returns nothing. Paginate via `gh api` to
-# find the newest 3.12 tag reliably. gh is preinstalled on every GitHub
-# Actions runner; locally the script falls back to the GITHUB_TOKEN path
-# if gh isn't on PATH.
-echo "    Looking up latest python3.12.x release tag (paginated)..."
+# niess/python-appimage uses one unversioned tag per minor Python version
+# (e.g. `python3.12`, `python3.13`) — NOT per patch version. Each release
+# carries a single AppImage asset named like
+# `python3.12.12-cp312-cp312-manylinux2014_x86_64.AppImage` that matches
+# the current latest patch. Query the release's assets for the exact
+# filename rather than guessing the patch version.
+PY_RELEASE="python3.12"
+echo "    Looking up asset name under release tag '$PY_RELEASE'..."
 if command -v gh >/dev/null 2>&1; then
-    PY_TAG=$(gh api --paginate 'repos/niess/python-appimage/releases' \
-                --jq '.[].tag_name' \
-             | grep -E '^python3\.12\.[0-9]+$' \
-             | sort -V | tail -1 || true)
+    PY_FILE=$(gh api "repos/niess/python-appimage/releases/tags/$PY_RELEASE" \
+                --jq '.assets[].name' \
+              | grep -E '^python3\.12\.[0-9]+-cp312-cp312-manylinux2014_x86_64\.AppImage$' \
+              | head -1 || true)
 else
-    # Local fallback: loop through pages manually with curl.
-    PY_TAG=""
-    for page in 1 2 3 4 5 6 7 8 9 10; do
-        TAGS=$(curl -fsSL "https://api.github.com/repos/niess/python-appimage/releases?per_page=100&page=$page" \
-               | python3 -c "import sys,json; [print(r['tag_name']) for r in json.load(sys.stdin) if r['tag_name'].startswith('python3.12.')]" 2>/dev/null || true)
-        [ -z "$TAGS" ] || { PY_TAG=$(echo "$TAGS" | sort -V | tail -1); break; }
-    done
+    PY_FILE=$(curl -fsSL "https://api.github.com/repos/niess/python-appimage/releases/tags/$PY_RELEASE" \
+              | python3 -c "import sys,json,re; d=json.load(sys.stdin); [print(a['name']) for a in d.get('assets',[]) if re.match(r'^python3\.12\.[0-9]+-cp312-cp312-manylinux2014_x86_64\.AppImage$', a['name'])]" \
+              | head -1)
 fi
-if [ -z "$PY_TAG" ]; then
-    echo "ERROR: no python3.12.x release tag found at niess/python-appimage" >&2
+if [ -z "$PY_FILE" ]; then
+    echo "ERROR: no manylinux2014_x86_64 asset found under release $PY_RELEASE" >&2
     exit 1
 fi
-echo "    Found: $PY_TAG"
-PY_FILE="${PY_TAG}-cp312-cp312-manylinux2014_x86_64.AppImage"
-PY_URL="https://github.com/niess/python-appimage/releases/download/${PY_TAG}/${PY_FILE}"
+echo "    Found asset: $PY_FILE"
+PY_URL="https://github.com/niess/python-appimage/releases/download/${PY_RELEASE}/${PY_FILE}"
 curl -fL -o "./${PY_FILE}" "$PY_URL"
 chmod +x "./${PY_FILE}"
 STARTER="./${PY_FILE}"
