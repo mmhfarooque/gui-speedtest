@@ -176,12 +176,17 @@ jobs:
       - name: Create release
         uses: softprops/action-gh-release@v3
         with:
+          # Flat glob on any extension we ship — third-party actions (flatpak-
+          # builder, snapcore/action-build) pick their own artifact dir names,
+          # and the old per-format prefix list missed them silently. Matching
+          # by extension is simpler and format-agnostic.
           files: |
-            artifacts/pypi/*
-            artifacts/deb/*
-            artifacts/appimage/*
-            artifacts/snap/*
-            artifacts/flatpak/*
-            artifacts/rpm/*
+            artifacts/**/*.whl
+            artifacts/**/*.tar.gz
+            artifacts/**/*.deb
+            artifacts/**/*.AppImage
+            artifacts/**/*.snap
+            artifacts/**/*.flatpak
+            artifacts/**/*.rpm
           fail_on_unmatched_files: false
           generate_release_notes: true

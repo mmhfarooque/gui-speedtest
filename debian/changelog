@@ -1,3 +1,15 @@
+gui-speedtest (1.6.5-1) unstable; urgency=medium
+
+  * Release workflow: fix the files glob in the Create-GitHub-Release
+    step so third-party-action artifacts (Flatpak, Snap, etc.) whose
+    artifact dir name differs from our per-format slug get attached.
+    v1.6.4 produced a Flatpak bundle in CI but didn't attach it to the
+    Release because the glob was artifacts/flatpak/* while the action
+    uploaded to artifacts/gui-speedtest-x86_64.flatpak/. Now matches by
+    extension (artifacts/**/*.flatpak etc.).
+
+ -- Mahmud Farooque <farooque7@gmail.com>  Sun, 19 Apr 2026 16:50:00 +0600
+
 gui-speedtest (1.6.4-1) unstable; urgency=medium
 
   * Flatpak workflow fix: revert runtime to GNOME 47 — the gnome-48 tag
