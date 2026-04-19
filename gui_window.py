@@ -392,6 +392,13 @@ def run_gui(
             Polkit shows a graphical password prompt; our GUI stays responsive.
             On success we refresh the backend picker; on failure we surface
             the exit code in the status line."""
+            import shutil as _shutil
+            if not _shutil.which("pkexec"):
+                logger.error("Ookla install: pkexec not found on PATH")
+                self.status.set_label(
+                    "pkexec missing — run 'sudo gui-speedtest-install-ookla' in a terminal"
+                )
+                return
             logger.info("Ookla install: launching pkexec helper")
             btn.set_sensitive(False)
             btn.set_label("Installing…")

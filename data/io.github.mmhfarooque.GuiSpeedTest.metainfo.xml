@@ -43,6 +43,11 @@
   </keywords>
   <content_rating type="oars-1.1"/>
   <releases>
+    <release version="1.5.2" date="2026-04-19">
+      <description>
+        <p>Hotfix: unbreak .deb install on Ubuntu 26.04 — the transitional policykit-1 package was removed, so the dependency is now polkitd | policykit-1.</p>
+      </description>
+    </release>
     <release version="1.5.1" date="2026-04-19">
       <description>
         <p>Ookla backend can now be enabled directly from the GUI — click the "Install" button on the "Enable Ookla" row, enter your password at the polkit prompt, and the backend picker refreshes. No terminal required.</p>

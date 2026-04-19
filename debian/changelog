@@ -1,3 +1,17 @@
+gui-speedtest (1.5.2-1) unstable; urgency=medium
+
+  * Hotfix: unbreak .deb install on Ubuntu 26.04 (resolute). v1.5.1
+    depended on the transitional package 'policykit-1' which was
+    dropped entirely from Ubuntu 26.04. Switch to
+    'polkitd | policykit-1' alternatives — installs polkitd on
+    modern systems, falls back to policykit-1 on older ones.
+  * Defence in depth: the in-GUI "Install" button now checks for
+    pkexec on PATH before spawning, and surfaces a terminal-command
+    fallback ("sudo gui-speedtest-install-ookla") if polkit really
+    is missing.
+
+ -- Mahmud Farooque <farooque7@gmail.com>  Sun, 19 Apr 2026 15:15:00 +0600
+
 gui-speedtest (1.5.1-1) unstable; urgency=medium
 
   * GUI: "Enable Ookla" action row. Shown automatically inside the
