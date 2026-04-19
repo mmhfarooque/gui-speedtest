@@ -43,6 +43,11 @@
   </keywords>
   <content_rating type="oars-1.1"/>
   <releases>
+    <release version="1.5.3" date="2026-04-19">
+      <description>
+        <p>Hotfix for networks with broken IPv6 transit — connection_info and the HTTP-based backends now prefer IPv4. Observed 40-100x speedup on affected paths; no change for working networks.</p>
+      </description>
+    </release>
     <release version="1.5.2" date="2026-04-19">
       <description>
         <p>Hotfix: unbreak .deb install on Ubuntu 26.04 — the transitional policykit-1 package was removed, so the dependency is now polkitd | policykit-1.</p>

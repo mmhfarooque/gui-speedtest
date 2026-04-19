@@ -1,3 +1,22 @@
+gui-speedtest (1.5.3-1) unstable; urgency=medium
+
+  * Hotfix: 40×-100× speedup on networks with broken IPv6 transit.
+    Root cause: DNS for hosts like speed.cloudflare.com returns IPv6
+    addresses first; Python's urllib tries them in order and waits for
+    the full socket timeout (~60s) per IPv6 address before falling back
+    to IPv4. curl uses Happy Eyeballs (RFC 8305) to try both families
+    in parallel, which masked the issue when comparing.
+  * Fix: socket.getaddrinfo wrapper at module load reorders results to
+    put IPv4 first. No effect on IPv6-only hosts (no v4 addresses ->
+    v6 list is returned unchanged). No effect on IPv6-fast / IPv4-fast
+    paths (IPv4 connects in <50ms like IPv6 would have).
+  * Observed on user's Tuhin Enterprise ISP: Cloudflare connection_info
+    30s -> 0.08s, latency 10065ms -> 53ms, 25MB download 62s -> 1.4s
+    (141 Mbps). Ookla was unaffected because its CLI already uses IPv4
+    by default.
+
+ -- Mahmud Farooque <farooque7@gmail.com>  Sun, 19 Apr 2026 17:00:00 +0600
+
 gui-speedtest (1.5.2-1) unstable; urgency=medium
 
   * Hotfix: unbreak .deb install on Ubuntu 26.04 (resolute). v1.5.1

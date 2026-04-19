@@ -20,6 +20,34 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from typing import Callable, Iterable, Optional
 
+# ---- IPv4-preference patch -------------------------------------------------
+# Python's urllib (via socket.getaddrinfo) tries addresses in the order
+# they're returned. DNS for hosts like speed.cloudflare.com frequently
+# returns IPv6 addresses first. On networks with broken or slow IPv6
+# transit (observed on some Asian ISPs) urllib ends up waiting for the
+# IPv6 connect to time out (default ~60s) before falling back to IPv4.
+# curl avoids this via Happy Eyeballs (RFC 8305) — tries both families
+# concurrently. Python's stdlib doesn't implement Happy Eyeballs, so we
+# reorder the getaddrinfo results to put IPv4 first. Downsides:
+#   - IPv6-only hosts still work (no IPv4 entries → v6 list is used)
+#   - IPv6-working-IPv4-broken hosts pay a short IPv4 timeout before
+#     falling through to v6. Rare in practice; fast timeout is better
+#     than the inverse (the bug we're fixing).
+_orig_getaddrinfo = socket.getaddrinfo
+
+
+def _prefer_ipv4_getaddrinfo(host, port, family=0, type=0, proto=0, flags=0):  # noqa: A002
+    results = _orig_getaddrinfo(host, port, family, type, proto, flags)
+    if family != 0:
+        return results  # caller already asked for a specific family
+    v4 = [r for r in results if r[0] == socket.AF_INET]
+    v6 = [r for r in results if r[0] == socket.AF_INET6]
+    return v4 + v6 if v4 else results
+
+
+socket.getaddrinfo = _prefer_ipv4_getaddrinfo
+# ---------------------------------------------------------------------------
+
 ProgressCallback = Optional[Callable[[str, dict], None]]
 
 # Chrome major bumped roughly yearly — stale UAs raise Cloudflare's bot-score
