@@ -1,7 +1,7 @@
 name: gui-speedtest
 title: GUI Speed Test for Linux
 base: core24
-version: '1.6.7'
+version: '1.6.8'
 summary: Multi-backend internet speed test with a GTK4 + libadwaita UI
 description: |
   A fast, native GTK4 + libadwaita internet speed test for Linux. Multiple
@@ -32,17 +32,12 @@ license: GPL-3.0+
 adopt-info: gui-speedtest
 
 apps:
+  # Single app entry — earlier config had a redundant 'gui' alias with the
+  # same common-id, which snap rejects ("common-id ... must be unique").
+  # Users launch via the desktop icon (which passes --gui via Exec=) or
+  # `snap run gui-speedtest --gui` from a terminal.
   gui-speedtest:
     command: bin/gui-speedtest
-    common-id: io.github.mmhfarooque.GuiSpeedTest
-    desktop: usr/share/applications/io.github.mmhfarooque.GuiSpeedTest.desktop
-    extensions: [gnome]
-    plugs:
-      - network
-      - network-observe
-      - home
-  gui:
-    command: bin/gui-speedtest --gui
     common-id: io.github.mmhfarooque.GuiSpeedTest
     desktop: usr/share/applications/io.github.mmhfarooque.GuiSpeedTest.desktop
     extensions: [gnome]

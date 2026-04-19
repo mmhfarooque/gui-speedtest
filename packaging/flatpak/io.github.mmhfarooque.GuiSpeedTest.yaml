@@ -18,15 +18,21 @@ finish-args:
   - --socket=fallback-x11
   - --device=dri
 
-# Note on M-Lab backend: the Flatpak build does NOT bundle websocket-client
-# (the old pypi `/packages/source/w/` URL pattern was deprecated, and
-# vendoring via flatpak-pip-generator adds maintenance overhead). The M-Lab
-# backend auto-hides when the module is unimportable — Flatpak users see the
-# other three backends (Cloudflare / Ookla / LibreSpeed). A future revision
-# can bundle websocket-client via flatpak-pip-generator for a Flathub
-# submission.
-
 modules:
+  # websocket-client for the M-Lab backend. Installed via pip with
+  # --share=network so we don't have to vendor the tarball URL (the old
+  # PyPI /packages/source/w/ pattern is deprecated and hash-path URLs
+  # need manual lookup each version). For Flathub submission, replace
+  # this with a flatpak-pip-generator'd sources block — Flathub's CI
+  # strips network access from module builds for reproducibility.
+  - name: python3-websocket-client
+    buildsystem: simple
+    build-options:
+      build-args:
+        - --share=network
+    build-commands:
+      - pip3 install --prefix=${FLATPAK_DEST} --no-build-isolation websocket-client==1.8.0
+
   - name: gui-speedtest
     buildsystem: simple
     build-commands:

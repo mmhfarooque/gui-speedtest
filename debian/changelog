@@ -1,3 +1,25 @@
+gui-speedtest (1.6.8-1) unstable; urgency=medium
+
+  * Four-format parity push. All four remaining targets (AppImage, Snap,
+    Flatpak-with-M-Lab, RPM) fixed in one tag; aim is full feature parity
+    with the .deb build (all four backends available).
+  * Flatpak: re-add websocket-client via pip install with --share=network
+    in module build-options (M-Lab backend works in Flatpak now).
+  * RPM: add python3-setuptools + python3-wheel + python3-pip to the dnf
+    install list so %pyproject_buildrequires is satisfied (v1.6.7 failed
+    with missing python3dist(setuptools)).
+  * AppImage: rewrite scripts/build-appimage.sh. Drop the non-existent
+    --entrypoint CLI flag on python-appimage; instead use `build local`
+    for a starter CPython AppImage, pip-install our wheel + websocket-
+    client into the extracted AppDir, write a GTK4-aware AppRun that
+    wires PYTHONHOME + GI_TYPELIB_PATH, then layer via
+    linuxdeploy-plugin-gtk.
+  * Snap: drop the redundant `gui:` app alias that shared a common-id
+    with the primary `gui-speedtest:` app (snap rejects duplicate
+    common-ids across apps).
+
+ -- Mahmud Farooque <farooque7@gmail.com>  Sun, 19 Apr 2026 17:30:00 +0600
+
 gui-speedtest (1.6.7-1) unstable; urgency=medium
 
   * RPM workflow fix: swap `git archive` for `tar --transform` in the
