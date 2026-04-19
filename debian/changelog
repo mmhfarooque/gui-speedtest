@@ -1,3 +1,20 @@
+gui-speedtest (1.3.1-1) unstable; urgency=medium
+
+  * GUI: fix sparklines / ping histogram not rendering. On Ubuntu 26.04
+    (resolute) and other distros that don't ship python3-gi-cairo as a
+    transitive dep of python3-gi, Gtk.DrawingArea draw_func callbacks
+    fail with "Couldn't find foreign struct converter for 'cairo.Context'"
+    — silently, inside GTK's paint pipeline. The widget reserves space
+    but nothing draws.
+  * Root cause: pygobject needs python3-gi-cairo installed AND cairo
+    imported somewhere in the process to register the foreign-struct
+    converter between libcairo and Python cairo.Context objects.
+  * Fix: add python3-gi-cairo to the .deb Depends, and `import cairo`
+    at the top of gui_window.py so pip users also get the converter
+    registered (assuming they have pycairo).
+
+ -- Mahmud Farooque <farooque7@gmail.com>  Sun, 19 Apr 2026 08:00:00 +0600
+
 gui-speedtest (1.3.0-1) unstable; urgency=medium
 
   * GUI: live sparkline chart inside each speed card. Download and upload

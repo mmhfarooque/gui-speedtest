@@ -31,6 +31,15 @@ def _log_file_path() -> Path:
 def run_gui(
     backend_name: str, app_name: str, app_id: str, app_version: str, latency_samples: int
 ) -> None:
+    # `import cairo` up-front registers the pygobject foreign-struct
+    # converter for cairo.Context — without it, any Gtk.DrawingArea
+    # draw_func callback raises
+    #   "TypeError: Couldn't find foreign struct converter for 'cairo.Context'"
+    # silently inside GTK's paint pipeline, and the widget never draws.
+    # The debian package pulls python3-gi-cairo as a hard dep so this
+    # import succeeds; pip users need to install it separately.
+    import cairo  # noqa: F401
+
     import gi
 
     gi.require_version("Gtk", "4.0")
