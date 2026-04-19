@@ -40,25 +40,22 @@ python3 -m build --wheel --outdir "$DIST_DIR"
 WHEEL=$(ls -t "$DIST_DIR"/gui_speedtest-*.whl | head -1)
 [ -n "$WHEEL" ] || { echo "ERROR: no wheel produced" >&2; exit 1; }
 
-echo "==> Starter AppImage via python-appimage (CPython on manylinux2014)"
+echo "==> Starter AppImage: downloading prebuilt CPython 3.12 (manylinux2014)"
 cd "$BUILD_DIR"
-# python-appimage's `build local` produces a self-contained CPython
-# AppImage. We extract it and layer our app + GTK runtime on top.
-python3 -m python_appimage build local \
-    --python-version 3.12 \
-    --linux-tag manylinux2014_x86_64 || {
-  echo "ERROR: python-appimage failed" >&2
-  echo "(Try: pip install --user --upgrade python-appimage)" >&2
-  exit 1
-}
-
-STARTER=$(ls -t ./python*.AppImage | head -1)
-[ -n "$STARTER" ] || { echo "ERROR: starter AppImage not produced" >&2; exit 1; }
+# Prebuilt standalone CPython AppImages are published by niess/python-appimage
+# for every patch release. We download one and extract its contents as the
+# base of our AppDir. This is simpler and more reliable than invoking the
+# python-appimage CLI (which has a moving-target subcommand surface).
+PY_TAG="python3.12.7-cp312-cp312-manylinux2014_x86_64"
+PY_URL="https://github.com/niess/python-appimage/releases/download/python3.12.7/${PY_TAG}.AppImage"
+curl -fL -o "./${PY_TAG}.AppImage" "$PY_URL"
+chmod +x "./${PY_TAG}.AppImage"
+STARTER="./${PY_TAG}.AppImage"
 
 echo "==> Extracting $STARTER to AppDir"
-"./$STARTER" --appimage-extract >/dev/null
+"$STARTER" --appimage-extract >/dev/null
 mv squashfs-root "$APPDIR"
-rm -f "./$STARTER"
+rm -f "$STARTER"
 
 echo "==> pip-installing gui-speedtest + websocket-client into AppDir"
 # Use the bundled CPython so the install lands where AppRun can find it.

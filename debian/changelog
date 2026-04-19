@@ -1,3 +1,14 @@
+gui-speedtest (1.6.9-1) unstable; urgency=medium
+
+  * AppImage fix: the `python-appimage build local` command doesn't
+    take --python-version or --linux-tag (those are for a different
+    subcommand). Simpler approach: download the prebuilt standalone
+    CPython AppImage from the niess/python-appimage release tags
+    directly via curl, then extract. More reliable than the moving
+    python-appimage CLI surface.
+
+ -- Mahmud Farooque <farooque7@gmail.com>  Sun, 19 Apr 2026 17:40:00 +0600
+
 gui-speedtest (1.6.8-1) unstable; urgency=medium
 
   * Four-format parity push. All four remaining targets (AppImage, Snap,
