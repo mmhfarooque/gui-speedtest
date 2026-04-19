@@ -21,9 +21,31 @@ See [CHANGELOG / releases](https://github.com/mmhfarooque/gui-speedtest/releases
 
 ---
 
-## Install
+## Quick install (one command, any distro)
 
-Pick whichever fits your distribution:
+```sh
+curl -fsSL https://raw.githubusercontent.com/mmhfarooque/gui-speedtest/main/install.sh | bash
+```
+
+The installer auto-detects your distro and installs the best-matching package (`.deb` on Ubuntu/Debian/Mint, `.rpm` on Fedora/RHEL/openSUSE, AppImage on everything else). No manual download, no two-step dance.
+
+Alternative one-liner if you'd rather clone the repo first:
+
+```sh
+git clone https://github.com/mmhfarooque/gui-speedtest.git && cd gui-speedtest && bash install.sh
+```
+
+To remove later:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/mmhfarooque/gui-speedtest/main/install.sh | bash -s -- --uninstall
+```
+
+---
+
+## Manual install — pick a format
+
+If you prefer to download the package directly:
 
 | Format | Distros | Command |
 |---|---|---|

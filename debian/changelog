@@ -1,3 +1,18 @@
+gui-speedtest (1.6.16-1) unstable; urgency=medium
+
+  * Ship install.sh + uninstall.sh + reinstall.sh alongside the package.
+    Matches the one-command pattern used by the CS9711 + iBus Avro repos:
+    users can now `curl -fsSL …/install.sh | bash` or `git clone … &&
+    bash install.sh` instead of the two-step "download the .deb then apt
+    install" dance. Installer auto-detects distro family (debian/fedora/
+    suse/arch/other) and picks the right asset — .deb on apt systems,
+    .rpm on dnf/zypper, AppImage on the rest. --appimage/--flatpak/--snap
+    flags force a specific format; --uninstall removes whichever format
+    is present.
+  * README rewritten around the Quick install one-liner up top.
+
+ -- Mahmud Farooque <farooque7@gmail.com>  Sun, 19 Apr 2026 20:00:00 +0600
+
 gui-speedtest (1.6.15-1) unstable; urgency=medium
 
   * AppImage (attempt 8): niess CPython starter ships its own appdata.xml

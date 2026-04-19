@@ -43,6 +43,11 @@
   </keywords>
   <content_rating type="oars-1.1"/>
   <releases>
+    <release version="1.6.16" date="2026-04-19">
+      <description>
+        <p>One-command installer shipped. `curl … | bash` or `git clone + bash install.sh` auto-detects your distro and installs the right format (.deb/.rpm/AppImage).</p>
+      </description>
+    </release>
     <release version="1.6.15" date="2026-04-19">
       <description>
         <p>AppImage build-script fix — scrub the CPython starter's stale appdata.xml before linuxdeploy validates it.</p>
