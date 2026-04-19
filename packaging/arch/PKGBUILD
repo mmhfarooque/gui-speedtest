@@ -1,0 +1,60 @@
+# Maintainer: Mahmud Farooque <farooque7@gmail.com>
+pkgname=gui-speedtest
+pkgver=1.6.0
+pkgrel=1
+pkgdesc="Native GTK4 + libadwaita internet speed test with Cloudflare, Ookla, M-Lab and LibreSpeed backends"
+arch=('any')
+url="https://github.com/mmhfarooque/${pkgname}"
+license=('GPL-3.0-or-later')
+
+depends=(
+    'python'
+    'python-gobject'
+    'python-cairo'
+    'gtk4'
+    'libadwaita'
+)
+
+optdepends=(
+    'python-websocket-client: for M-Lab NDT7 backend'
+)
+
+makedepends=(
+    'python-build'
+    'python-installer'
+    'python-setuptools'
+    'python-wheel'
+)
+
+source=("${pkgname}-${pkgver}.tar.gz::${url}/archive/v${pkgver}.tar.gz")
+# Replace SKIP with `sha256sum gui-speedtest-1.6.0.tar.gz` output before
+# submitting to AUR. CI can generate this automatically.
+sha256sums=('SKIP')
+
+build() {
+    cd "${pkgname}-${pkgver}"
+    python -m build --wheel --no-isolation
+}
+
+package() {
+    cd "${pkgname}-${pkgver}"
+
+    python -m installer --destdir="${pkgdir}" dist/*.whl
+
+    # Desktop integration files aren't part of the wheel (see pyproject.toml
+    # comment) so install them explicitly.
+    install -Dm644 "data/io.github.mmhfarooque.GuiSpeedTest.desktop" \
+        "${pkgdir}/usr/share/applications/io.github.mmhfarooque.GuiSpeedTest.desktop"
+    install -Dm644 "data/icons/io.github.mmhfarooque.GuiSpeedTest.svg" \
+        "${pkgdir}/usr/share/icons/hicolor/scalable/apps/io.github.mmhfarooque.GuiSpeedTest.svg"
+    install -Dm644 "data/io.github.mmhfarooque.GuiSpeedTest.metainfo.xml" \
+        "${pkgdir}/usr/share/metainfo/io.github.mmhfarooque.GuiSpeedTest.metainfo.xml"
+
+    # Optional helper: installs Ookla's official speedtest CLI (requires
+    # sudo/pkexec at runtime; the binary itself is from install.speedtest.net).
+    install -Dm755 "scripts/install-ookla.sh" \
+        "${pkgdir}/usr/bin/gui-speedtest-install-ookla"
+
+    install -Dm644 LICENSE "${pkgdir}/usr/share/licenses/${pkgname}/LICENSE"
+    install -Dm644 README.md "${pkgdir}/usr/share/doc/${pkgname}/README.md"
+}

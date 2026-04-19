@@ -1,3 +1,27 @@
+gui-speedtest (1.6.0-1) unstable; urgency=medium
+
+  * Ookla backend: live-progress rewrite. Replaces the blocking
+    single-JSON-blob invocation with streaming JSON Lines events
+    (--format=jsonl --progress=yes). The GUI's Download, Upload,
+    Ping, and Jitter cards now animate in real time during an Ookla
+    run — sparklines fill in, ping bars appear one-by-one, speed
+    numbers tick live — instead of sitting silent until the end.
+  * Ookla backend: "Run Again" now triggers a fresh speedtest CLI
+    invocation. Previously the cached result from the first run was
+    silently re-used on subsequent clicks. The backend now resets
+    per-run state whenever the reader thread has finished.
+  * Error text wrap: backend failures (e.g. M-Lab 401) no longer push
+    the speed card wider than the window. A new wrapping error label
+    under each card displays the message in multiple lines; the outer
+    horizontal scrollbar is disabled; rows use homogeneous FILL layout
+    so oversized content can't blow sibling cards off-screen.
+  * Ookla install helper: curl + wget now use -4 (force IPv4) and
+    hard connect/max timeouts. Previously the Tuhin Enterprise ISP's
+    broken IPv6 transit could hang the tarball download indefinitely
+    (only Python urllib got the v1.5.3 IPv4-first fix, not OS tools).
+
+ -- Mahmud Farooque <farooque7@gmail.com>  Sun, 19 Apr 2026 15:45:00 +0600
+
 gui-speedtest (1.5.3-1) unstable; urgency=medium
 
   * Hotfix: 40×-100× speedup on networks with broken IPv6 transit.

@@ -1,0 +1,88 @@
+name: gui-speedtest
+title: GUI Speed Test for Linux
+base: core24
+version: '1.6.0'
+summary: Multi-backend internet speed test with a GTK4 + libadwaita UI
+description: |
+  A fast, native GTK4 + libadwaita internet speed test for Linux. Multiple
+  backends behind one clean interface — run against whichever server you
+  trust.
+
+  Backends:
+    * Cloudflare — global anycast, no setup (default)
+    * Ookla Speedtest — wraps the official CLI
+    * M-Lab NDT7 — academic/research-backed, non-commercial
+    * LibreSpeed — self-hosted or community servers (point via env var)
+
+  Features:
+    * Live sparkline charts for download and upload speeds
+    * Per-sample ping histogram
+    * Automatic light/dark theme sync with your system
+    * Both GUI and CLI modes; JSON output for scripting
+    * In-app log viewer with copy-all
+
+  Runtime is Python 3 stdlib only (plus websocket-client for M-Lab),
+  so no JavaScript, no ads, no account, no tracking.
+
+grade: stable
+confinement: strict
+license: GPL-3.0+
+
+# Match the AppStream ID so the Store surfaces the metainfo icon + screenshots.
+adopt-info: gui-speedtest
+
+apps:
+  gui-speedtest:
+    command: bin/gui-speedtest
+    common-id: io.github.mmhfarooque.GuiSpeedTest
+    desktop: usr/share/applications/io.github.mmhfarooque.GuiSpeedTest.desktop
+    extensions: [gnome]
+    plugs:
+      - network
+      - network-observe
+      - home
+  gui:
+    command: bin/gui-speedtest --gui
+    common-id: io.github.mmhfarooque.GuiSpeedTest
+    desktop: usr/share/applications/io.github.mmhfarooque.GuiSpeedTest.desktop
+    extensions: [gnome]
+    plugs:
+      - network
+      - network-observe
+      - home
+
+parts:
+  gui-speedtest:
+    plugin: python
+    source: .
+    # AppStream metainfo drives `adopt-info` so Snap Store pulls version,
+    # summary, description, icon, screenshots from a single source.
+    parse-info: [data/io.github.mmhfarooque.GuiSpeedTest.metainfo.xml]
+    python-packages:
+      - websocket-client>=1.8,<3   # M-Lab NDT7 backend
+    build-packages:
+      - libcairo2-dev
+      - libgirepository1.0-dev
+      - pkg-config
+      - python3-dev
+    stage-packages:
+      - python3-gi
+      - python3-gi-cairo
+      - gir1.2-gtk-4.0
+      - gir1.2-adw-1
+      - libgtk-4-1
+      - libadwaita-1-0
+    override-build: |
+      craftctl default
+      install -Dm644 $CRAFT_PART_SRC/data/io.github.mmhfarooque.GuiSpeedTest.desktop \
+        $CRAFT_PART_INSTALL/usr/share/applications/io.github.mmhfarooque.GuiSpeedTest.desktop
+      install -Dm644 $CRAFT_PART_SRC/data/icons/io.github.mmhfarooque.GuiSpeedTest.svg \
+        $CRAFT_PART_INSTALL/usr/share/icons/hicolor/scalable/apps/io.github.mmhfarooque.GuiSpeedTest.svg
+      install -Dm644 $CRAFT_PART_SRC/data/io.github.mmhfarooque.GuiSpeedTest.metainfo.xml \
+        $CRAFT_PART_INSTALL/usr/share/metainfo/io.github.mmhfarooque.GuiSpeedTest.metainfo.xml
+      # Snap's Desktop entry must not point at an absolute path that won't
+      # exist outside the snap mount — rewrite Exec and Icon to snap-relative.
+      sed -i \
+        -e 's|^Exec=.*|Exec=gui-speedtest --gui|' \
+        -e 's|^Icon=.*|Icon=${SNAP}/usr/share/icons/hicolor/scalable/apps/io.github.mmhfarooque.GuiSpeedTest.svg|' \
+        $CRAFT_PART_INSTALL/usr/share/applications/io.github.mmhfarooque.GuiSpeedTest.desktop

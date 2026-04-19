@@ -44,7 +44,7 @@ def run_gui(
 
     gi.require_version("Gtk", "4.0")
     gi.require_version("Adw", "1")
-    from gi.repository import Adw, Gio, GLib, Gtk
+    from gi.repository import Adw, Gio, GLib, Gtk, Pango
 
     class _Sparkline(Gtk.DrawingArea):
         """Rolling line chart of recent speed samples.
@@ -164,6 +164,7 @@ def run_gui(
             main_box.append(header)
 
             scroll = Gtk.ScrolledWindow(vexpand=True)
+            scroll.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
             main_box.append(scroll)
 
             content = Gtk.Box(
@@ -179,7 +180,9 @@ def run_gui(
             speed_row = Gtk.Box(
                 orientation=Gtk.Orientation.HORIZONTAL,
                 spacing=16,
-                halign=Gtk.Align.CENTER,
+                halign=Gtk.Align.FILL,
+                hexpand=True,
+                homogeneous=True,
             )
             content.append(speed_row)
 
@@ -191,7 +194,9 @@ def run_gui(
             lat_row = Gtk.Box(
                 orientation=Gtk.Orientation.HORIZONTAL,
                 spacing=16,
-                halign=Gtk.Align.CENTER,
+                halign=Gtk.Align.FILL,
+                hexpand=True,
+                homogeneous=True,
             )
             content.append(lat_row)
 
@@ -233,7 +238,12 @@ def run_gui(
             content.append(self.progress)
 
             self.status = Gtk.Label(
-                label="Press Start to begin", css_classes=["dim-label"]
+                label="Press Start to begin",
+                css_classes=["dim-label"],
+                wrap=True,
+                wrap_mode=Pango.WrapMode.WORD_CHAR,
+                max_width_chars=60,
+                justify=Gtk.Justification.CENTER,
             )
             content.append(self.status)
 
@@ -257,6 +267,7 @@ def run_gui(
                 .stat-unit { font-size: 12px; }
                 .speed-card { padding: 20px 28px; border-radius: 12px; }
                 .stat-card { padding: 14px 24px; border-radius: 10px; }
+                .speed-error, .stat-error { font-size: 11px; margin-top: 4px; }
                 """
             )
             Gtk.StyleContext.add_provider_for_display(
@@ -264,7 +275,11 @@ def run_gui(
             )
 
         def _make_speed_card(self, label: str) -> dict:
-            frame = Gtk.Frame(css_classes=["speed-card"])
+            frame = Gtk.Frame(
+                css_classes=["speed-card"],
+                hexpand=True,
+                halign=Gtk.Align.FILL,
+            )
             box = Gtk.Box(
                 orientation=Gtk.Orientation.VERTICAL,
                 spacing=4,
@@ -295,10 +310,25 @@ def run_gui(
             val_box.append(unit)
             chart = _Sparkline()
             box.append(chart)
-            return {"frame": frame, "value": val, "unit": unit, "chart": chart}
+            error_lbl = Gtk.Label(
+                label="",
+                visible=False,
+                wrap=True,
+                wrap_mode=Pango.WrapMode.WORD_CHAR,
+                max_width_chars=28,
+                xalign=0.5,
+                justify=Gtk.Justification.CENTER,
+                css_classes=["speed-error", "dim-label"],
+            )
+            box.append(error_lbl)
+            return {"frame": frame, "value": val, "unit": unit, "chart": chart, "error": error_lbl}
 
         def _make_stat_card(self, label: str, with_bars: bool = False) -> dict:
-            frame = Gtk.Frame(css_classes=["stat-card"])
+            frame = Gtk.Frame(
+                css_classes=["stat-card"],
+                hexpand=True,
+                halign=Gtk.Align.FILL,
+            )
             box = Gtk.Box(
                 orientation=Gtk.Orientation.VERTICAL,
                 spacing=2,
@@ -332,6 +362,18 @@ def run_gui(
                 bars = _PingBars(expected_samples=latency_samples)
                 box.append(bars)
                 out["bars"] = bars
+            error_lbl = Gtk.Label(
+                label="",
+                visible=False,
+                wrap=True,
+                wrap_mode=Pango.WrapMode.WORD_CHAR,
+                max_width_chars=22,
+                xalign=0.5,
+                justify=Gtk.Justification.CENTER,
+                css_classes=["stat-error", "dim-label"],
+            )
+            box.append(error_lbl)
+            out["error"] = error_lbl
             return out
 
         def _update_speed(self, card: dict, speed_mbps: float) -> None:
@@ -590,6 +632,11 @@ def run_gui(
             self.ul_card["chart"].clear()
             if "bars" in self.ping_card:
                 self.ping_card["bars"].clear()
+            for card in (self.dl_card, self.ul_card, self.ping_card, self.jitter_card):
+                err = card.get("error")
+                if err is not None:
+                    err.set_label("")
+                    err.set_visible(False)
             self.progress.set_fraction(0)
             threading.Thread(target=self._run_test, daemon=True).start()
 
@@ -703,11 +750,17 @@ def run_gui(
             except BackendError as e:
                 lat = None
                 lat_text = f"Ping: N/A ({e})"
+                GLib.idle_add(self.ping_card["value"].set_text, "N/A")
+                GLib.idle_add(self.jitter_card["value"].set_text, "N/A")
+                GLib.idle_add(self.ping_card["error"].set_label, str(e))
+                GLib.idle_add(self.ping_card["error"].set_visible, True)
             else:
                 if lat.failed:
                     lat_text = "Ping: N/A (all samples failed)"
                     GLib.idle_add(self.ping_card["value"].set_text, "N/A")
                     GLib.idle_add(self.jitter_card["value"].set_text, "N/A")
+                    GLib.idle_add(self.ping_card["error"].set_label, "all samples failed")
+                    GLib.idle_add(self.ping_card["error"].set_visible, True)
                 else:
                     lat_text = f"Ping: {lat.avg:.0f} ms"
                     GLib.idle_add(self.ping_card["value"].set_text, f"{lat.avg:.0f}")
@@ -746,7 +799,9 @@ def run_gui(
             except BackendError as e:
                 dl_text = "N/A"
                 GLib.idle_add(self.dl_card["value"].set_text, "N/A")
-                GLib.idle_add(self.dl_card["unit"].set_text, str(e))
+                GLib.idle_add(self.dl_card["unit"].set_text, "Mbps")
+                GLib.idle_add(self.dl_card["error"].set_label, str(e))
+                GLib.idle_add(self.dl_card["error"].set_visible, True)
             end_phase()
             if self.cancelled:
                 GLib.idle_add(self._finish_run, "Cancelled", priority=GLib.PRIORITY_HIGH)
@@ -772,7 +827,9 @@ def run_gui(
             except BackendError as e:
                 ul_text = "N/A"
                 GLib.idle_add(self.ul_card["value"].set_text, "N/A")
-                GLib.idle_add(self.ul_card["unit"].set_text, str(e))
+                GLib.idle_add(self.ul_card["unit"].set_text, "Mbps")
+                GLib.idle_add(self.ul_card["error"].set_label, str(e))
+                GLib.idle_add(self.ul_card["error"].set_visible, True)
             end_phase()
 
             final = f"Download: {dl_text} | Upload: {ul_text} | {lat_text}"

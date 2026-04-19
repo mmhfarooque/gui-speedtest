@@ -1,7 +1,18 @@
 name: Release
 
-# Triggered by pushing a tag like v1.0.0. Builds sdist+wheel, .deb, and
-# AppImage in parallel and attaches all artifacts to a GitHub Release.
+# Triggered by pushing a tag like v1.0.0. Builds sdist+wheel, .deb, AppImage,
+# Snap, Flatpak bundle, and RPM in parallel and attaches all artifacts to a
+# GitHub Release.
+#
+# Individual long-tail formats (AppImage, Snap, Flatpak, RPM) are gated behind
+# repo Variables so an initial tag can ship a .deb + wheel + sdist without
+# failing if a store-publish credential or container isn't ready yet.
+# Variables to flip once each path is verified:
+#   APPIMAGE_READY = '1'  -> build + attach AppImage
+#   SNAP_READY     = '1'  -> build snap; SNAP_PUBLISH=1 also pushes to
+#                            Snap Store (requires SNAP_STORE_LOGIN secret)
+#   FLATPAK_READY  = '1'  -> build flatpak bundle
+#   RPM_READY      = '1'  -> build .rpm in a Fedora container
 
 on:
   push:
@@ -48,9 +59,6 @@ jobs:
     name: Build AppImage
     runs-on: ubuntu-24.04
     # GATE: only runs when the repo has APPIMAGE_READY=1 set in repo Variables.
-    # Flip this after scripts/build-appimage.sh has been finished (the GTK
-    # bundling TODO). Until then, tagging a release won't publish a broken
-    # AppImage.
     if: vars.APPIMAGE_READY == '1'
     steps:
       - uses: actions/checkout@v6
@@ -63,7 +71,6 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y libgtk-4-dev libadwaita-1-dev
           # linuxdeploy continuous build — pin by SHA256 when a stable tag lands.
-          # TODO: replace with a tagged release URL + shasum -c verification.
           wget -O linuxdeploy https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage
           wget -O linuxdeploy-plugin-gtk https://raw.githubusercontent.com/linuxdeploy/linuxdeploy-plugin-gtk/master/linuxdeploy-plugin-gtk.sh
           chmod +x linuxdeploy linuxdeploy-plugin-gtk
@@ -75,11 +82,83 @@ jobs:
           name: appimage
           path: dist/*.AppImage
 
+  snap:
+    name: Build Snap
+    runs-on: ubuntu-24.04
+    # GATE: flip SNAP_READY=1 once the snap has been validated locally.
+    if: vars.SNAP_READY == '1'
+    steps:
+      - uses: actions/checkout@v6
+      - uses: snapcore/action-build@v1
+        id: snapcraft
+      - uses: actions/upload-artifact@v7
+        with:
+          name: snap
+          path: ${{ steps.snapcraft.outputs.snap }}
+      # Optional auto-publish to the Snap Store. Set SNAP_PUBLISH=1 in repo
+      # Variables and SNAP_STORE_LOGIN in repo Secrets (generate via
+      # `snapcraft export-login`).
+      - name: Publish to Snap Store (edge channel)
+        if: vars.SNAP_PUBLISH == '1'
+        uses: snapcore/action-publish@v1
+        env:
+          SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.SNAP_STORE_LOGIN }}
+        with:
+          snap: ${{ steps.snapcraft.outputs.snap }}
+          release: edge
+
+  flatpak:
+    name: Build Flatpak bundle
+    runs-on: ubuntu-24.04
+    # GATE: flatpak bundles for attaching to GitHub Releases. Flathub
+    # submission is a separate per-manifest PR flow.
+    if: vars.FLATPAK_READY == '1'
+    container:
+      image: ghcr.io/flathub/flatpak-builder:gnome-47
+      options: --privileged
+    steps:
+      - uses: actions/checkout@v6
+      - uses: flatpak/flatpak-github-actions/flatpak-builder@v6
+        with:
+          bundle: gui-speedtest.flatpak
+          manifest-path: packaging/flatpak/io.github.mmhfarooque.GuiSpeedTest.yaml
+          cache-key: flatpak-builder-${{ github.sha }}
+
+  rpm:
+    name: Build .rpm (Fedora)
+    runs-on: ubuntu-24.04
+    # GATE: initial rpm build needs a final checksum in the .spec Source0;
+    # flip RPM_READY=1 when ready.
+    if: vars.RPM_READY == '1'
+    container:
+      image: fedora:41
+    steps:
+      - uses: actions/checkout@v6
+      - name: Install build deps
+        run: |
+          dnf install -y rpm-build rpmdevtools pyproject-rpm-macros \
+            python3-devel python3-build desktop-file-utils libappstream-glib \
+            git-core
+      - name: Prepare source tarball
+        run: |
+          rpmdev-setuptree
+          VERSION=${GITHUB_REF_NAME#v}
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          git archive --format=tar.gz --prefix=gui-speedtest-${VERSION}/ \
+            -o ~/rpmbuild/SOURCES/gui-speedtest-${VERSION}.tar.gz HEAD
+          cp packaging/rpm/gui-speedtest.spec ~/rpmbuild/SPECS/
+      - name: Build
+        run: rpmbuild -ba ~/rpmbuild/SPECS/gui-speedtest.spec
+      - uses: actions/upload-artifact@v7
+        with:
+          name: rpm
+          path: ~/rpmbuild/RPMS/noarch/*.rpm
+
   release:
     name: Create GitHub Release
     needs: [pypi-artifacts, deb]
-    # The appimage job is gated; if it ran, include its artifacts too.
-    # Otherwise the release still ships pypi + deb.
+    # The other build jobs are gated; artifacts from whichever ran get
+    # attached via the glob below. Missing artifacts don't fail the release.
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -94,5 +173,8 @@ jobs:
             artifacts/pypi/*
             artifacts/deb/*
             artifacts/appimage/*
+            artifacts/snap/*
+            artifacts/flatpak/*
+            artifacts/rpm/*
           fail_on_unmatched_files: false
           generate_release_notes: true

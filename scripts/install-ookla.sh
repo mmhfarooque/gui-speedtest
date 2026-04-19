@@ -18,6 +18,15 @@ set -euo pipefail
 TARBALL_URL="https://install.speedtest.net/app/cli/ookla-speedtest-1.2.0-linux-x86_64.tgz"
 APT_INSTALLER="https://install.speedtest.net/app/cli/install.deb.sh"
 
+# -4 forces IPv4 resolution. Some ISPs (e.g. Tuhin Enterprise in Dhaka)
+# advertise IPv6 AAAA records that don't actually have working transit;
+# wget/curl then sit on the IPv6 connect attempt for many minutes because
+# neither implements Happy Eyeballs. --connect-timeout / --max-time give
+# a hard ceiling so the installer can't hang forever even if -4 routes
+# via a flaky IPv4 path. Python urllib has a separate fix in base.py.
+CURL="curl -4 --connect-timeout 15 --max-time 120"
+WGET="wget -4 --timeout=30 --tries=2"
+
 say() { echo "==> $*"; }
 note() { echo "    $*"; }
 
@@ -50,7 +59,7 @@ if command -v apt-get >/dev/null 2>&1; then
     say "Detected apt-based system (codename: $CODENAME)"
     note "Attempting Ookla's apt repo install (keeps the CLI up-to-date via apt upgrade)"
 
-    if curl -sSL "$APT_INSTALLER" | sudo bash 2>&1 | tail -5; then
+    if $CURL -sSL "$APT_INSTALLER" | sudo bash 2>&1 | tail -5; then
         # install.deb.sh exited 0 but that doesn't mean the repo has our codename.
         # Sniff apt update output for a 404 on the packagecloud Ookla repo.
         UPDATE_OUT=$(sudo apt-get update 2>&1 || true)
@@ -75,7 +84,7 @@ if [ "$USE_TARBALL" = "1" ]; then
     say "Installing Ookla CLI from tarball to /usr/local/bin/speedtest"
     TMP=$(mktemp -d)
     trap 'rm -rf "$TMP"' EXIT
-    wget -q -O "$TMP/ookla.tgz" "$TARBALL_URL"
+    $WGET -q -O "$TMP/ookla.tgz" "$TARBALL_URL"
     tar -xzf "$TMP/ookla.tgz" -C "$TMP" speedtest
     sudo install -m 0755 "$TMP/speedtest" /usr/local/bin/speedtest
 fi
