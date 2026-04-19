@@ -1,3 +1,13 @@
+gui-speedtest (1.6.15-1) unstable; urgency=medium
+
+  * AppImage (attempt 8): niess CPython starter ships its own appdata.xml
+    (python3.12.12.appdata.xml) with AppStream id not in reverse-DNS
+    format. linuxdeploy's appimage plugin validates it and fails with
+    `cid-maybe-not-rdns`. Scrub `python*.appdata.xml` + `python*.desktop`
+    from the extracted AppDir before layering our own metainfo.
+
+ -- Mahmud Farooque <farooque7@gmail.com>  Sun, 19 Apr 2026 19:00:00 +0600
+
 gui-speedtest (1.6.14-1) unstable; urgency=medium
 
   * AppImage (attempt 7): `linuxdeploy --custom-apprun` copies the source

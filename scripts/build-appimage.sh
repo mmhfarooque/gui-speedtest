@@ -84,6 +84,18 @@ echo "    Using bundled Python: $APPDIR_PYTHON"
 "$APPDIR_PYTHON" -m pip install --no-deps --prefix "$APPDIR/usr" "$WHEEL"
 "$APPDIR_PYTHON" -m pip install --prefix "$APPDIR/usr" "websocket-client>=1.8,<3"
 
+echo "==> Removing starter CPython's bundled AppStream/desktop files"
+# The niess python-appimage starter ships a `python3.12.X.appdata.xml`
+# whose AppStream id isn't valid reverse-DNS — linuxdeploy's appimage
+# plugin fails validation with `cid-maybe-not-rdns python3.12.12`. Same
+# issue with the bundled `python3.12.X.desktop`. Our own metainfo +
+# desktop (installed below) are the real ones.
+rm -f "$APPDIR"/usr/share/metainfo/python*.appdata.xml
+rm -f "$APPDIR"/usr/share/metainfo/python*.metainfo.xml
+rm -f "$APPDIR"/usr/share/applications/python*.desktop
+rm -f "$APPDIR"/python*.desktop "$APPDIR"/python*.png "$APPDIR"/python*.svg
+rm -f "$APPDIR"/.DirIcon
+
 echo "==> Installing desktop + icon + metainfo into AppDir"
 install -Dm644 "$REPO_ROOT/data/${APP_ID}.desktop" \
     "$APPDIR/usr/share/applications/${APP_ID}.desktop"
