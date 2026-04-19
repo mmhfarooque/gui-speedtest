@@ -1,3 +1,14 @@
+gui-speedtest (1.6.6-1) unstable; urgency=medium
+
+  * Release workflow: add every build job to the release job's `needs:`
+    list so the download-artifact step waits for Flatpak/Snap/AppImage/RPM
+    before firing. v1.6.5's release fired before Flatpak's 2m41s job
+    finished, so only deb + pypi made it to the Release. Gated-off jobs
+    still resolve as "success" so they don't block; `!cancelled()` keeps
+    the Release step running even if an optional format fails.
+
+ -- Mahmud Farooque <farooque7@gmail.com>  Sun, 19 Apr 2026 17:00:00 +0600
+
 gui-speedtest (1.6.5-1) unstable; urgency=medium
 
   * Release workflow: fix the files glob in the Create-GitHub-Release

@@ -163,9 +163,13 @@ jobs:
 
   release:
     name: Create GitHub Release
-    needs: [pypi-artifacts, deb]
-    # The other build jobs are gated; artifacts from whichever ran get
-    # attached via the glob below. Missing artifacts don't fail the release.
+    # Wait for every build job (gated ones that were skipped still resolve as
+    # "success" under `needs:`, so this doesn't block when a gate is off).
+    # `if: !cancelled()` lets the release step still run even if one of the
+    # optional long-tail jobs (AppImage/Snap/RPM/Flatpak) failed — the
+    # per-format glob will just skip missing artifact dirs.
+    needs: [pypi-artifacts, deb, appimage, snap, flatpak, rpm]
+    if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
     permissions:
       contents: write
