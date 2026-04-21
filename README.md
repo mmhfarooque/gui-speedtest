@@ -1,12 +1,24 @@
-# GUI Speed Test for Linux
+# GUI Speed Test
 
 [![Release](https://img.shields.io/github/v/release/mmhfarooque/gui-speedtest)](https://github.com/mmhfarooque/gui-speedtest/releases/latest)
 [![License: GPL v3+](https://img.shields.io/badge/License-GPLv3%2B-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 [![CI](https://github.com/mmhfarooque/gui-speedtest/actions/workflows/ci.yml/badge.svg)](https://github.com/mmhfarooque/gui-speedtest/actions/workflows/ci.yml)
 
-A fast, native GTK4 + libadwaita internet speed test for Linux. Multiple backends behind one clean interface — run against whichever server you trust.
+A fast, native internet speed test. Multiple backends behind one clean interface — run against whichever server you trust. Follows your system's light/dark theme. No browser, no tracking, no ads.
 
-Follows your system's light/dark theme. No browser, no tracking, no ads.
+---
+
+## Download
+
+| Platform | Status | Get it |
+|---|---|---|
+| 🐧 **Linux** | ✅ v1.7.0 stable | [7 package formats below](#quick-install-one-command-any-distro) — `.deb`, `.rpm`, AppImage, Snap, Flatpak, AUR, PyPI |
+| 🍎 **macOS** | ✅ v0.1.0 alpha | [mobile/](mobile/) — Flutter port; DMG from [Releases](https://github.com/mmhfarooque/gui-speedtest/releases) |
+| 📱 **iOS** | 🚧 Planned v0.2 | Coming to App Store |
+| 🤖 **Android** | 🚧 Planned v0.2 | Coming to Play Store |
+| 🪟 **Windows** | 🚧 Planned v0.3 | MSIX installer |
+
+The Linux app (this repo root) is Python + GTK4 + libadwaita. Mobile/desktop Apple/Android/Windows all share a single Flutter + Dart codebase under [`mobile/`](mobile/).
 
 ---
 
