@@ -17,6 +17,7 @@ class HomePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
       appBar: AppBar(
         title: const Text('Speed Test'),
@@ -45,29 +46,45 @@ class HomePage extends StatelessWidget {
           autofocus: true,
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: const [
-                StartButton(),
-                ErrorBanner(),
-                ConnectionCard(),
-                SizedBox(height: 12),
-                Row(
-                  children: [
-                    Expanded(child: DownloadCard()),
-                    SizedBox(width: 12),
-                    Expanded(child: UploadCard()),
-                  ],
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 720),
+                child: Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: theme.colorScheme.outlineVariant,
+                      width: 1.5,
+                    ),
+                    color: theme.colorScheme.surfaceContainerLowest,
+                  ),
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: const [
+                      StartButton(),
+                      ErrorBanner(),
+                      ConnectionCard(),
+                      SizedBox(height: 12),
+                      Row(
+                        children: [
+                          Expanded(child: DownloadCard()),
+                          SizedBox(width: 12),
+                          Expanded(child: UploadCard()),
+                        ],
+                      ),
+                      SizedBox(height: 12),
+                      Row(
+                        children: [
+                          Expanded(child: PingCard()),
+                          SizedBox(width: 12),
+                          Expanded(child: JitterCard()),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
-                SizedBox(height: 12),
-                Row(
-                  children: [
-                    Expanded(child: PingCard()),
-                    SizedBox(width: 12),
-                    Expanded(child: JitterCard()),
-                  ],
-                ),
-              ],
+              ),
             ),
           ),
         ),

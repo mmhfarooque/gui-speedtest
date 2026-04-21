@@ -22,14 +22,17 @@ class MetricValue extends StatelessWidget {
         child: CircularProgressIndicator(strokeWidth: 2.5),
       );
     }
-    return Text(
-      (value == null || value!.isEmpty) ? '—' : value!,
-      style: theme.textTheme.headlineMedium?.copyWith(
-        fontWeight: FontWeight.w600,
-        color: color,
+    return FittedBox(
+      fit: BoxFit.scaleDown,
+      alignment: Alignment.centerLeft,
+      child: Text(
+        (value == null || value!.isEmpty) ? '—' : value!,
+        style: theme.textTheme.headlineMedium?.copyWith(
+          fontWeight: FontWeight.w600,
+          color: color,
+        ),
+        maxLines: 1,
       ),
-      maxLines: 1,
-      overflow: TextOverflow.ellipsis,
     );
   }
 }
