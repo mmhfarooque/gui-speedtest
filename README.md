@@ -12,7 +12,7 @@ A fast, native internet speed test. Multiple backends behind one clean interface
 
 | Platform | Status | Get it |
 |---|---|---|
-| 🐧 **Linux** | ✅ v1.7.1 stable | [7 package formats below](#quick-install-one-command-any-distro) — `.deb`, `.rpm`, AppImage, Snap, Flatpak, AUR, PyPI |
+| 🐧 **Linux** | ✅ v1.7.2 stable | [7 package formats below](#quick-install-one-command-any-distro) — `.deb`, `.rpm`, AppImage, Snap, Flatpak, AUR, PyPI |
 | 🍎 **macOS** | ✅ v0.1.0 alpha | [mobile/](mobile/) — Flutter port; DMG from [Releases](https://github.com/mmhfarooque/gui-speedtest/releases) |
 | 📱 **iOS** | 🚧 Planned v0.2 | Coming to App Store |
 | 🤖 **Android** | 🚧 Planned v0.2 | Coming to Play Store |

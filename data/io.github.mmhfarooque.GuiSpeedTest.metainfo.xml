@@ -43,6 +43,11 @@
   </keywords>
   <content_rating type="oars-1.1"/>
   <releases>
+    <release version="1.7.2" date="2026-05-02">
+      <description>
+        <p>Packaging-only follow-up to 1.7.1: bumps version refs in packaging/rpm/gui-speedtest.spec, packaging/arch/PKGBUILD, and data/metainfo.xml that were missed in the 1.7.1 cut. Restores the .rpm release artifact (the v1.7.1 Fedora job failed because rpmbuild couldn't find a tarball matching the stale Spec Version). No code changes.</p>
+      </description>
+    </release>
     <release version="1.7.1" date="2026-05-02">
       <description>
         <p>LibreSpeed: drop three dead public servers from the curated list (librespeed.de, Clouvider London, Hostkey Singapore) — only Clouvider NYC/Atlanta/LA ship now. Add auto-fallback so if a curated server is unreachable at run time, the app transparently switches to the next live one. Custom self-hosted URLs are never auto-switched. Also fixes install.sh latest-tag lookup so the mobile companion app doesn't hijack the desktop installer.</p>

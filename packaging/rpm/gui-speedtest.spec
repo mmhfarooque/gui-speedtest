@@ -1,5 +1,5 @@
 Name:           gui-speedtest
-Version:        1.7.1
+Version:        1.7.2
 Release:        1%{?dist}
 Summary:        Multi-backend internet speed test with a GTK4 + libadwaita UI
 

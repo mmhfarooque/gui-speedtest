@@ -1,3 +1,15 @@
+gui-speedtest (1.7.2-1) unstable; urgency=medium
+
+  * Packaging-only follow-up to 1.7.1. The Fedora .rpm job in the
+    v1.7.1 release CI failed because packaging/rpm/gui-speedtest.spec
+    still pinned Version to 1.7.0 — rpmbuild looked for a tarball
+    named gui-speedtest-1.7.0.tar.gz while the workflow generated
+    gui-speedtest-1.7.1.tar.gz. Bumps spec Version to 1.7.2,
+    PKGBUILD pkgver to 1.7.2, adds a 1.7.2 entry to data/metainfo.xml
+    and the README platform-table line. No code changes from 1.7.1.
+
+ -- Mahmud Farooque <farooque7@gmail.com>  Sat, 02 May 2026 14:50:00 +1000
+
 gui-speedtest (1.7.1-1) unstable; urgency=medium
 
   * LibreSpeed: drop three dead public servers from the curated list
