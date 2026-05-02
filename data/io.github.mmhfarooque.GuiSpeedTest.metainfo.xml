@@ -43,6 +43,11 @@
   </keywords>
   <content_rating type="oars-1.1"/>
   <releases>
+    <release version="1.7.1" date="2026-05-02">
+      <description>
+        <p>LibreSpeed: drop three dead public servers from the curated list (librespeed.de, Clouvider London, Hostkey Singapore) — only Clouvider NYC/Atlanta/LA ship now. Add auto-fallback so if a curated server is unreachable at run time, the app transparently switches to the next live one. Custom self-hosted URLs are never auto-switched. Also fixes install.sh latest-tag lookup so the mobile companion app doesn't hijack the desktop installer.</p>
+      </description>
+    </release>
     <release version="1.7.0" date="2026-04-19">
       <description>
         <p>LibreSpeed now works out of the box — ships a curated list of public servers and a GUI picker to switch between them. Custom self-hosted URLs still supported.</p>
