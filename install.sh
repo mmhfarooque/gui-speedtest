@@ -180,8 +180,14 @@ fi
 # ----------------------------------------------------------------------------
 if [ "$REQUESTED_TAG" = "latest" ]; then
     info "Looking up latest release tag..."
-    TAG=$(curl -fsSL "https://api.github.com/repos/${REPO}/releases/latest" \
-          | grep -E '"tag_name"' | head -1 | sed -E 's/.*"tag_name":[[:space:]]*"([^"]+)".*/\1/')
+    # NOTE: /releases/latest returns whichever release GitHub flagged as
+    # "latest" — which can be the mobile companion app (mobile-v*) since it
+    # shares this repo. Filter to desktop tags (vN.N.N) explicitly.
+    TAG=$(curl -fsSL "https://api.github.com/repos/${REPO}/releases?per_page=20" \
+          | grep -E '"tag_name"' \
+          | grep -E '"v[0-9]' \
+          | head -1 \
+          | sed -E 's/.*"tag_name":[[:space:]]*"([^"]+)".*/\1/')
     [ -n "$TAG" ] || { fail "Could not find a release tag. Check your network."; exit 1; }
 else
     TAG="$REQUESTED_TAG"
