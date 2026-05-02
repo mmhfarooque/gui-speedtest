@@ -24,7 +24,7 @@ The Linux app (this repo root) is Python + GTK4 + libadwaita. Mobile/desktop App
 
 ## What's new
 
-- **LibreSpeed works out of the box** (1.7.0) — the backend now ships with six public LibreSpeed endpoints baked in (LibreSpeed project official, Clouvider London/NYC/Atlanta/LA, Hostkey Singapore). The GUI shows a "LibreSpeed Server" sub-picker under the Backend dropdown — choose one close to you and click Start. No more "set `LIBRESPEED_URL` env var and restart" dance. Self-hosted URLs still work via `--librespeed-url` or the env var.
+- **LibreSpeed works out of the box** (1.7.1) — the backend ships with three curated Clouvider US endpoints (NYC, Atlanta, LA) and the GUI shows a "LibreSpeed Server" sub-picker under the Backend dropdown — choose one close to you and click Start. No more "set `LIBRESPEED_URL` env var and restart" dance. If a curated server goes down between releases, v1.7.1 auto-falls-back to the next live one in the list. Self-hosted URLs still work via `--librespeed-url` or the env var (and are never auto-switched — your explicit choice is respected).
 - **One-command installer** (1.6.16+) — auto-detects your distro and installs the best format. No more "download the .deb then apt install" two-step.
 - **Ships in 7 formats** (1.6.15+) — `.deb`, `.rpm`, AppImage, Snap, Flatpak, PyPI wheel, source tarball. All with full backend parity (Cloudflare / Ookla / M-Lab / LibreSpeed).
 - **Ookla backend live progress** (1.6.0+) — sparklines and ping bars animate in real time during the run instead of sitting silent until the end.
@@ -266,7 +266,7 @@ To switch backends, use the **Backend** dropdown in the Connection panel.
 | **Cloudflare** | ✓ | Global anycast, hits your nearest PoP. No setup. Works out of the box. |
 | **Ookla Speedtest** | | Wraps the official `speedtest` CLI. Install with the in-app **Enable Ookla** button or `sudo gui-speedtest-install-ookla`. |
 | **M-Lab NDT7** | | Academic/research-backed. Non-commercial. Needs `websocket-client` — `pip install 'gui-speedtest[mlab]'` or `sudo apt install python3-websocket`. |
-| **LibreSpeed** | ✓ (v1.7+) | **Works out of the box.** Ships with a curated list of public LibreSpeed servers (LibreSpeed project, Clouvider in London/NYC/Atlanta/LA, Hostkey Singapore). The GUI shows a server picker under the Backend dropdown — switch between endpoints instantly, no restart. Point at a self-hosted server via `--librespeed-url` or `$LIBRESPEED_URL` if you prefer. |
+| **LibreSpeed** | ✓ (v1.7+) | **Works out of the box.** Ships with three curated Clouvider US endpoints (NYC/Atlanta/LA). The GUI shows a server picker under the Backend dropdown — switch between endpoints instantly, no restart. If a curated server is unreachable at run time (v1.7.1+), the app auto-falls-back to the next live one. Point at a self-hosted server via `--librespeed-url` or `$LIBRESPEED_URL` if you prefer (custom URLs aren't auto-switched). |
 
 The dropdown only shows backends whose prerequisites are met. If one's missing, the **Log** button in the header shows an actionable hint.
 
