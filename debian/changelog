@@ -1,3 +1,21 @@
+gui-speedtest (1.7.1-1) unstable; urgency=medium
+
+  * LibreSpeed: drop three dead public servers from the curated list
+    (librespeed.de — 403 on /backend/empty.php, london.speedtest.clouvider.net
+    — DNS NXDOMAIN, speedtest.sgp.hostkey.com — DNS NXDOMAIN). The picker
+    now ships only known-working endpoints (Clouvider NYC / Atlanta / LA).
+  * LibreSpeed: auto-fall-back to the next reachable curated server when
+    the user's pick fails on first connect. Surfaces the switch via
+    ConnectionInfo.server (so the GUI's "Server" row shows the real one
+    used) and a log line. Custom URLs from $LIBRESPEED_URL or
+    --librespeed-url are NOT auto-switched — explicit user choice is
+    respected, errors surface as before.
+  * install.sh: filter latest-tag lookup to v[0-9]+ desktop tags so the
+    mobile companion app's release tag (mobile-v0.1.0) doesn't hijack
+    the curl|bash one-liner with a 404 .deb URL.
+
+ -- Mahmud Farooque <farooque7@gmail.com>  Sat, 02 May 2026 14:00:00 +1000
+
 gui-speedtest (1.7.0-1) unstable; urgency=medium
 
   * LibreSpeed now works out of the box. The backend ships a curated

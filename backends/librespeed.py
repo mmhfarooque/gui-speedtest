@@ -61,16 +61,6 @@ UP_SIZES = [
 # https://github.com/librespeed/speedtest/wiki for current endpoints).
 KNOWN_SERVERS: list[dict[str, str]] = [
     {
-        "name": "LibreSpeed (Frankfurt, DE)",
-        "url": "https://librespeed.de",
-        "sponsor": "LibreSpeed project",
-    },
-    {
-        "name": "Clouvider (London, UK)",
-        "url": "https://london.speedtest.clouvider.net",
-        "sponsor": "Clouvider",
-    },
-    {
         "name": "Clouvider (New York, US)",
         "url": "https://nyc.speedtest.clouvider.net",
         "sponsor": "Clouvider",
@@ -84,11 +74,6 @@ KNOWN_SERVERS: list[dict[str, str]] = [
         "name": "Clouvider (Los Angeles, US)",
         "url": "https://la.speedtest.clouvider.net",
         "sponsor": "Clouvider",
-    },
-    {
-        "name": "Hostkey (Singapore)",
-        "url": "https://speedtest.sgp.hostkey.com",
-        "sponsor": "Hostkey",
     },
 ]
 
@@ -163,6 +148,34 @@ def _validate_url(raw: str) -> str | None:
     return raw.rstrip("/")
 
 
+def _probe_reachable(url: str, timeout: float = 4.0) -> bool:
+    """Quick HEAD-style probe of a LibreSpeed root.
+
+    Hits /backend/empty.php (the same endpoint used for latency samples) to
+    verify both DNS and that the LibreSpeed deployment actually serves our
+    expected path layout. Returns True on HTTP 2xx.
+    """
+    target = f"{url.rstrip('/')}/backend/empty.php"
+    try:
+        req = urllib.request.Request(target, headers={"User-Agent": BROWSER_UA})
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
+            return 200 <= resp.status < 300
+    except (*NETWORK_EXCEPTIONS, OSError):
+        return False
+
+
+def _is_curated(url: str) -> bool:
+    """True if `url` matches one of the shipped KNOWN_SERVERS entries.
+
+    Used by the auto-fallback path to decide whether to second-guess the
+    server choice. Custom / self-hosted URLs (via $LIBRESPEED_URL or
+    --librespeed-url) are left alone — the user explicitly asked for that
+    server, so a silent switch would be wrong.
+    """
+    norm = url.rstrip("/")
+    return any(s["url"].rstrip("/") == norm for s in KNOWN_SERVERS)
+
+
 def _server_url() -> str | None:
     """Resolve the LibreSpeed server URL, preferring env var > baked-in default.
 
@@ -213,11 +226,60 @@ class LibreSpeedBackend(SpeedTestBackend):
                 f"No LibreSpeed server configured (KNOWN_SERVERS empty and "
                 f"{ENV_VAR} unset) — this should not happen in a shipped release."
             )
+        self._reachability_checked = False
+        self.fallback_from: str | None = None
+
+    def _ensure_reachable(self) -> None:
+        """Probe self.base; if dead and we're using a curated server, pick the
+        next live one from KNOWN_SERVERS.
+
+        Public LibreSpeed servers rotate — domains expire, deployments move,
+        operators stop sponsoring. Without this probe, the user picks a server
+        in the GUI dropdown, the run starts, every phase fails with cryptic
+        DNS errors, and the cards show "all samples failed". With this probe,
+        we transparently fall back to a working server and surface the switch
+        via ConnectionInfo.server + a log line.
+
+        No-op for custom (self-hosted) URLs: when a user sets LIBRESPEED_URL
+        or passes --librespeed-url, they explicitly want that server. Silent
+        switching would mask their misconfiguration.
+        """
+        if self._reachability_checked:
+            return
+        self._reachability_checked = True
+
+        if not _is_curated(self.base):
+            return
+
+        if _probe_reachable(self.base):
+            return
+
+        original = self.base
+        logger.warning(
+            "LibreSpeed server %s unreachable — probing fallbacks", original
+        )
+        for candidate in KNOWN_SERVERS:
+            url = candidate["url"].rstrip("/")
+            if url == original.rstrip("/"):
+                continue
+            if _probe_reachable(url):
+                self.base = url
+                self.fallback_from = original
+                logger.info(
+                    "LibreSpeed: switched from %s to %s (%s)",
+                    original, url, candidate["name"],
+                )
+                return
+        logger.error(
+            "LibreSpeed: no curated server reachable; keeping %s "
+            "(phase HTTP errors will surface)", original,
+        )
 
     def _url(self, path: str) -> str:
         return f"{self.base}/{path.lstrip('/')}"
 
     def connection_info(self) -> ConnectionInfo:
+        self._ensure_reachable()
         try:
             data = json.loads(safe_decode(http_get(self._url("backend/getIP.php"), timeout=5)))
             parts = data.get("processedString", "").split(" - ", 1)
@@ -236,6 +298,7 @@ class LibreSpeedBackend(SpeedTestBackend):
     def test_latency(
         self, samples: int = 10, callback: ProgressCallback = None
     ) -> LatencyResult:
+        self._ensure_reachable()
         url = self._url("backend/empty.php")
 
         def factory() -> urllib.request.Request:
@@ -244,6 +307,7 @@ class LibreSpeedBackend(SpeedTestBackend):
         return measure_latency(factory, samples, callback, backend=self)
 
     def test_download(self, callback: ProgressCallback = None) -> SpeedResult:
+        self._ensure_reachable()
         def make(mb: int) -> urllib.request.Request:
             return urllib.request.Request(
                 self._url(f"backend/garbage.php?ckSize={mb}"),
@@ -257,6 +321,7 @@ class LibreSpeedBackend(SpeedTestBackend):
         return run_chunks(chunks, "download_chunk", callback, backend=self)
 
     def test_upload(self, callback: ProgressCallback = None) -> SpeedResult:
+        self._ensure_reachable()
         def make(size: int) -> urllib.request.Request:
             return urllib.request.Request(
                 self._url("backend/empty.php"),
